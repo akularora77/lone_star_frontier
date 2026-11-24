@@ -1,7 +1,7 @@
 # Lone Star Frontier - Style Guide (v1.0)
 
 ## 1. Visual Aesthetic: "Modern Parchment"
-The goal is to blend the rugged, weathered feel of the 1870s American West with the functional clarity of a modern RPG.
+Blend the weathered feel of the 1870s American West with the clarity of a modern RPG. The hex values below are the source of truth. CSS may store oklch tokens when they are conversions of these hex values.
 
 ### Color Palette
 - **Primary Background:** `#F4EBD0` (Weathered Paper/Parchment)
@@ -9,42 +9,46 @@ The goal is to blend the rugged, weathered feel of the 1870s American West with 
 - **Secondary Accent:** `#D4AF37` (Dusty Gold)
 - **Text (Body):** `#2F2F2F` (Charcoal / Faded Ink)
 - **UI Borders:** `#5D4037` (Dark Wood / Iron)
-- **Stamina Bar:** `#2E7D32` (Forest Green) -> `#C62828` (Deep Red) when low.
+- **Stamina Bar:** `#2E7D32` (Forest Green) → `#C62828` (Deep Red) when low
 - **XP Bar:** `#1565C0` (Sky Blue)
 
 ### Typography
-- **Headers:** Serif font (e.g., 'Playfair Display' or 'Rye'). Bold, rugged, and authoritative.
-- **Body/UI:** Monospace or clean Serif (e.g., 'Roboto Mono' or 'Crimson Text'). High legibility for lore and stats.
+Loaded from the root head, which lives under `src/` so the frontend boundary still holds. Page title: **Lone Star Frontier**.
+- **Headers:** Playfair Display. Bold, rugged, readable.
+- **Body/UI:** Crimson Text. High legibility for lore and stats.
 
-## 2. Component Architecture
-Lovable should implement these key UI sections:
+## 2. Screen
+One game screen. Locations are state, not routes. Layout is three regions:
 
-### A. The Sidebar (RuneScape-Style)
-- **Location:** Fixed to the Right side of the screen.
-- **Top Section:** Player Stats (HP, Stamina, Mining Level, XP). Use progress bars.
-- **Middle Section:** Inventory Grid (4x7 or similar). Show icons for ores, pickaxes, and badges.
-- **Bottom Section:** Active Badge slot and Gold balance.
+### A. Sidebar (right, fixed)
+- **StatsPanel:** HP, Stamina, Mining Level, XP progress to the next level. HP stays full in v1.0. A walk/run toggle sits with stamina. At Mining Level 10 the XP bar reads full.
+- **InventoryGrid:** 4×7 (28) slots. Ores, pickaxes, and clothing. Stack counts on ores.
+- **BadgeGoldBar:** Gold balance, and the Mine Master badge once `mastery_badge_earned` is true. The slot is empty before that. Sell-all for the selected ore stack starts here and confirms in the quote panel.
 
-### B. The World Viewport
-- **Location:** Central area.
-- **Function:** Displays the current location (Boomtown districts or Mine levels).
-- **Navigation:** Clear buttons or a clickable map to move between:
-    - Saloon (Onboarding)
-    - Mining Quarter (General Store + Mine Entrance)
-    - Mine Levels (1-10)
+### B. WorldViewport (center)
+- **LocationNav:** Saloon, Mining Quarter, and all 10 floors. A locked floor shows `Requires Mining Level {n}.`
+- **SaloonScene**, **MiningQuarterScene**, **MineLevelScene** (one mine scene, parameterized by floor).
+- On a floor, each ore in the drop table that the player has not unlocked shows `{Ore} unlocks at Mining Level {n} with a {pickaxe}.` Copy is built from `list_mine_levels`. It is not written by an NPC.
 
-### C. The Dialogue HUD
-- **Location:** Bottom-anchored overlay.
-- **Design:** Large portrait of the NPC on the left, scrolling text on the right.
-- **Interactive Elements:** Prompt buttons for the player to respond or initiate trade.
+### C. DialogueHud (bottom)
+- **Portrait** of the NPC.
+- **Rapport meter** for that NPC, 0–100. The formula stays hidden. The meter updates from `talk_to_npc`'s returned score.
+- **ScrollText** for the reply.
+- **ActionButtons:** Talk. Trade when the open NPC is the General Store Manager. Sell all when an ore stack is selected.
+- **QuotePanel:** Unit price, quantity, total, and the time left on the 60-second quote. Confirm calls `execute_trade`. The panel can be dismissed. Expiry is enforced by the service.
 
 ## 3. Asset Placeholders (v1.0)
-Since we are in a spec-driven phase, use CSS-based shapes or generic icons for:
-- **Ores:** Colored circles/gems matching the tier (Copper, Iron, Silver, Gold, Mithril/Quartz).
-- **Pickaxes:** Simple silhouettes.
-- **Badges:** Star-shaped SVG icons.
+CSS shapes or generic icons:
+- **Ores:** Colored circles/gems by tier (copper, iron, silver, gold, mithril).
+- **Pickaxes and clothing:** Simple silhouettes.
+- **Mine Master badge:** One star-shaped SVG, shown only after it is earned.
+- **Portraits:** Placeholder frames keyed by `portrait_store_manager`, `portrait_bartender`, `portrait_prospector`.
 
 ## 4. UI Feedback & Animations
-- **Mining Action:** A simple progress bar or "shaking" effect on the ore icon.
-- **XP Gain:** Floating text (e.g., "+15 XP") that fades upward.
-- **Stamina Toggle:** Visual toggle for "Walk" vs. "Run".
+- **Mining:** A short progress bar or a shake on the ore that dropped.
+- **XP gain:** Floating text (for example `+10 XP`) that fades upward. Show `+20 XP` when a bonus ore also dropped, matching `xp_gained`.
+- **Stamina:** The walk/run toggle and the bar updating from `tick` results.
+- **Rapport:** The meter steps by the returned delta. A downward step is visible when the player is hostile.
+
+## 5. Component Home
+All of the above lives under `src/`. Suggested split: `Sidebar` (`StatsPanel`, `InventoryGrid`, `BadgeGoldBar`), `WorldViewport` (`LocationNav`, `SaloonScene`, `MiningQuarterScene`, `MineLevelScene`), `DialogueHud` (`Portrait`, `ScrollText`, `ActionButtons`, `QuotePanel`). Design tokens live in `src/styles.css`.

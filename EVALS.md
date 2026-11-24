@@ -1,30 +1,29 @@
 # Lone Star Frontier - Evaluation Blueprint (v1.1)
 
-## 1. Deterministic Component Evals
-These tests ensure the core game mechanics and data integrity are functioning correctly.
+v1.0 can ship against the Lovable mock tests in `src/`. This file is the later Replit gate. It grades the real API, not the keyword mock.
 
-- **JSON Schema Validity:** Validate that all API responses (from Lovable and Replit) strictly adhere to the defined JSON schemas.
-- **Hard Price Bounds Enforcement:** Verify that the `get_store_quote` tool never returns a price outside the `[0.7 * base, 1.3 * base]` range, regardless of LLM input.
-- **Inventory & Gold Integrity:** Test that `execute_trade` correctly increments/decrements player gold and inventory counts without math errors or race conditions.
-- **Level Access Logic:** Ensure players cannot mine in levels for which they lack the required Mining Level or Pickaxe Tier.
+## 1. Deterministic Component Evals
+- **Contract shape:** API responses match `SCHEMA.md`, including the shared `{code, message}` errors.
+- **Price bounds:** `get_store_quote` never returns a unit price outside `[round(0.7 * base), round(1.3 * base)]`, for both the formula stand-in and a model proposal.
+- **Quote integrity:** A quote stores quantity, unit, and total. `execute_trade` applies that exact quantity once. Expired or consumed quotes fail. Gold and stacks stay consistent.
+- **Floor access:** `move` and `mine_ore` reject a floor when Mining Level is below `required_mining_level`.
+- **Ore filter:** A swing never returns an ore the player's Mining Level or pickaxe tier has not unlocked. On floors 5–10 the weight table still contains the lower ores, and those ores can drop.
+- **Stamina:** A swing below the adjusted cost fails and changes nothing. `tick` restores 2/sec while walking and spends 4/sec while running. Running at 0 switches to walk.
+- **Inventory:** Ores stack in one slot up to 9,999. A swing that cannot place its ore returns `INVENTORY_FULL` and changes nothing. Gear does not stack.
+- **Badge:** `mastery_badge_earned` becomes true only when Mining Level becomes 10, and it does not flip back.
+- **Rapport clamp:** Suggested deltas outside −5…+5 are clamped. The stored score stays inside 0…100. A message does not also receive a flat +1.
 
 ## 2. Semantic LLM-as-a-Judge Evals
-These tests evaluate the quality and safety of AI NPC interactions.
-
-- **Dynamic Pricing Fairness:** 
-  - **Goal:** LLM-as-a-Judge verifies that the price offered by the General Store Manager reflects the player's `rapport_score`.
-  - **Metric:** Higher rapport should correlate with better prices (within guardrails).
-- **Persona Consistency:** 
-  - **Goal:** Ensure NPCs maintain their Wild West persona (accents, vocabulary, attitude).
-  - **Metric:** Pass/Fail based on persona guidelines.
-- **Zero-Hallucination Grounding (Lore Leakage):**
-  - **Goal:** Townspeople must not mention features from the v2.0+ backlog (bounties, horses, monsters).
-  - **Metric:** Pass if no v2.0+ keywords or concepts are present in dialogue.
+- **Pricing direction:** Higher General Store Manager rapport produces a better price for the player (higher sell price, lower buy price) inside the band. Mining Level may influence a model proposal and cannot push it outside the band.
+- **Rapport semantics:** Hostile lines (yelling, insults, threats) get a negative delta. Polite or helpful lines get a positive delta. Neutral or repeated compliments can be 0. Magnitude stays inside the guidance in `PRD.md` section 8.
+- **Persona:** NPCs keep a Wild West voice.
+- **Zero-hallucination grounding:** Townspeople do not mention v2.0+ backlog features (bounties, horses, monsters, combat, new cities).
 
 ## 3. Calibration & Regression Gate
-- **Golden Test Set:** A curated collection of 50+ prompt/response pairs for NPC dialogue and pricing requests.
-- **Pass/Fail Thresholds:**
-  - Deterministic Evals: **100% Pass** required.
-  - Semantic Evals (Pricing/Persona): **>= 90% Pass** required.
-  - Zero-Hallucination: **100% Pass** required.
-- **Promotion Rule:** No changes to prompts, models, or core game versions can be merged to `main` without passing the v1.1 Eval Suite.
+- **Golden set:** 50+ prompt/response pairs covering trade quotes, friendly lines, hostile lines, repeated compliments, and lure questions about backlog features.
+- **Thresholds:**
+  - Deterministic evals: **100%**
+  - Pricing direction and persona: **≥ 90%**
+  - Rapport sign (hostile negative, friendly positive): **≥ 90%**
+  - Zero-hallucination: **100%**
+- **Promotion rule:** Prompt, model, or core-rules changes do not merge to `main` without passing this suite once v1.1 is the active version.
