@@ -5,9 +5,14 @@ This repository on GitHub (`main` branch) serves as the **Single Source of Truth
 
 1.  **GitHub (`main` branch):** Orchestrates all specs and versioning.
 2.  **Lovable (Frontend UI):**
-    *   **Reads:** `CONTEXT.md`, `PRD.md`, and `SCHEMA.md` from `main`.
+    *   **Reads:** `CONTEXT.md`, `PRD.md`, `SCHEMA.md`, and `STYLE_GUIDE.md` from `main`.
     *   **Owns:** `src/` (React UI components).
     *   **Scope:** UI presentation, frontend logic, and component-level state.
+
+## AI Agent Collaboration & Amendments
+The specs in this repository (`PRD.md`, `SCHEMA.md`, `STYLE_GUIDE.md`) are the **starting point**. 
+- **Suggestions Welcome:** AI tools (Lovable and Replit) are encouraged to suggest amendments to these files if they identify technical blockers, UX improvements, or architectural optimizations.
+- **Amendment Protocol:** To suggest a change, the tool should describe the proposed update clearly. Once approved by the user, the `main` branch specs will be updated by the Gemini CLI before the tool proceeds with the implementation.
 3.  **Replit (Backend & Evals):**
     *   **Pulls:** `main` branch.
     *   **Owns:** `evals/`, `server/`, and backend logic.
