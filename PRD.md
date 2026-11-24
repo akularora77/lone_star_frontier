@@ -6,7 +6,14 @@
 - **Changelog:**
   - **v1.0:** Initial v1 scope—Boomtown hub, 10-level Mine, 5-tier ore ladder, 4 player stats, progressive Ranger Badges, dynamic LLM store pricing, and lore-grounded townspeople.
 
-## 1. High-Level Premise & Motivation
+## 1. Terminology & Variables (SSoT for Names)
+To allow for easy rebranding, all entities use the following "Master Names" which should be centralized in the code:
+- **HUB_CITY_NAME:** "Boomtown" (Placeholder - will change)
+- **GENERAL_STORE_NAME:** "The General Store"
+- **MINING_NPC_NAME:** "General Store Manager"
+- **STARTING_SALOON_NAME:** "The Last Stand Saloon"
+
+## 2. High-Level Premise & Motivation
 - **Premise:** Wild West Texas Ranger RPG with RuneScape-style skill progression and AI NPCs.
 - **Motivation:** Create an entertaining and rewarding game that balances the thrill of interactive world progression with a classic Wild West theme to appeal to the nostalgia of that era.
 - **Success Criteria:** Meaningful character journeys per user, defined as users completing greater than 80% of the full journey, progression arc, and plot line once defined.
