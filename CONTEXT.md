@@ -16,8 +16,8 @@ The bridge into this repo copies the app across and leaves the root specs in pla
 
 In this repo, small clarifications can be applied locally and pushed in batches. Major changes to progression, economy, or the AI contract wait for the user's approval before they land on `main`. After a spec push, Lovable and Replit pull `main` before building further.
 
-## Lovable Client (v1.0)
-- The v1 prototype is 2D and top-down. Replit integrates against it. A 3D follow view may be built in parallel and calls the same `GameService`.
+## Lovable Client (v2.0)
+- The v2.0 prototype is 2D and top-down. Replit integrates against it. The 3D follow view is v2.1 and is not part of this build. It will call the same `GameService`.
 - TanStack Start. One route, `/`, holds the whole game screen. Locations are state.
 - Player snapshot and UI state live in a React context/reducer under `src/game/`.
 - `src/game/api.ts` defines a `GameService` interface that mirrors the `SCHEMA.md` contracts, including `tick`.
@@ -27,7 +27,7 @@ In this repo, small clarifications can be applied locally and pushed in batches.
 - The mock keeps the player in memory. `localStorage` is not the player record.
 - No Lovable Cloud. No Supabase client in `src/`. The browser reaches the database only through Replit.
 - Fonts and the page title are set from the root head inside `src/`.
-- Mock tests live next to the mock under `src/`. They cover the price band, locked floors, the ore filter, stamina, trades, inventory-full, quote expiry, and the rapport clamp. They do not replace the later harness in `evals/`.
+- Mock tests live next to the mock under `src/`. They cover the price band, locked floors, the ore filter, stamina, trades, inventory-full, quote expiry, the rapport clamp, unstacked ore, cancelling a swing by walking, a Rattler tile rolled once per floor, Rattler hits, and knockout. They do not replace the later harness in `evals/`.
 
 ## File Ownership
 - **Lovable:** `src/` only, including colocated mock tests, `src/styles.css`, and `src/PROTOTYPE_DRIFT.md`.
@@ -45,9 +45,10 @@ There is one living `PRD.md`. Do not add `PRD_v1.md`, `PRD_v2.md`, and so on.
 3. Pull `main` in Lovable and in Replit, then build.
 
 ### Roadmap
-- **v1.0 (current):** Core mining loop and Boomtown hub.
-- **v1.1:** A second pass that makes the game better. Its changes are chosen after v1.0 is playable.
-- **v1.2:** Eval and guardrail hardening.
-- **v2.0:** Ore bounties and quests.
-- **v2.1:** Horseback riding.
-- **v3.0:** Combat, monsters, and map expansion.
+- **v1.0:** Core mining loop and Boomtown hub.
+- **v2.0 (current):** 2D dangerous mine. Position, denser floors, a Rattler, knockout, and unstacked ore.
+- **v2.1:** 3D follow view, same rules.
+- **v2.2:** Eval and guardrail hardening, against the v2.0 rules.
+- **v3.0:** Ore bounties and quests.
+- **v3.1:** Horseback riding.
+- **v4.0:** Fighting back, a combat skill, and map expansion.
