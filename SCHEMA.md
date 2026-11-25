@@ -9,8 +9,7 @@ v1.0 implementation contract. Product rules are in `PRD.md`. If a number below a
 - `RAPPORT_DELTA_MIN` −5, `RAPPORT_DELTA_MAX` +5
 - `INVENTORY_SLOTS` 28
 - `ORE_STACK_CAP` 9999
-- `STAMINA_REGEN_PER_SEC` 2 while standing, talking, or walking, even if the toggle is `run`
-- `RUN_MOVE_COST` 4
+- `STAMINA_REGEN_PER_SEC` 2 while standing, talking, or walking. There is no running in v1.0.
 - `PICKAXE_STAMINA_RELIEF` 2 per pickaxe tier above the ore's requirement
 - `MIN_PICKAXE_STAMINA` 4, applied before clothing
 - `CLOTHING_STAMINA_CAP` 30 (percent)
@@ -30,9 +29,9 @@ Gold, prices, XP, stamina, and rapport are integers. A fractional price rounds t
 - `max_hp`: Integer (default 100)
 - `stamina`: Integer (default 100)
 - `max_stamina`: Integer (default 100)
-- `movement_mode`: Text (`walk` or `run`, default `walk`)
 - `stamina_bank_ms`: Integer (default 0)
 - `presented_ore_id`: UUID (FK `items_catalog`, nullable)
+- `swing_ends_at`: Timestamp, nullable
 - `gold`: Integer (default 50)
 - `current_location`: Text (default `saloon`)
 - `current_pickaxe_id`: UUID (FK `items_catalog`, nullable)
@@ -54,6 +53,7 @@ A new player starts at the Saloon with the Rusty Pickaxe in inventory and equipp
 - `required_pickaxe_tier`: Integer, nullable (ores)
 - `xp_per_mine`: Integer, nullable (ores)
 - `base_stamina`: Integer, nullable (ores, cost with the minimum pickaxe)
+- `swing_seconds`: Numeric, nullable (ores)
 - `stamina_modifier`: Integer, nullable (clothing, 0–30)
 - `yield_modifier`: Integer, nullable (clothing, 0–25)
 
@@ -162,13 +162,13 @@ Base values are placeholders and can be rebalanced without a version bump. Descr
 
 **Ores**
 
-| Name | Tier | Base value | Mining | Pickaxe tier | XP | Base stamina |
-| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Red Dirt Copper | 1 | 5 | 1 | 1 | 10 | 6 |
-| Pecos Iron | 2 | 12 | 3 | 2 | 24 | 8 |
-| Brazos Silver | 3 | 30 | 5 | 3 | 45 | 10 |
-| Alamo Gold | 4 | 70 | 7 | 4 | 80 | 12 |
-| Lone Star Mithril | 5 | 150 | 9 | 5 | 140 | 14 |
+| Name | Tier | Base value | Mining | Pickaxe tier | XP | Base stamina | Swing seconds |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Red Dirt Copper | 1 | 5 | 1 | 1 | 10 | 6 | 2 |
+| Pecos Iron | 2 | 12 | 3 | 2 | 24 | 8 | 2.5 |
+| Brazos Silver | 3 | 30 | 5 | 3 | 45 | 10 | 3 |
+| Alamo Gold | 4 | 70 | 7 | 4 | 80 | 12 | 3.5 |
+| Lone Star Mithril | 5 | 150 | 9 | 5 | 140 | 14 | 4 |
 
 Mithril description includes the local nickname Bluebonnet Quartz.
 
@@ -197,7 +197,8 @@ Mithril description includes the local nickname Bluebonnet Quartz.
 | :--- | :--- |
 | `LEVEL_LOCKED` | Floor entry or move, Mining Level too low |
 | `NO_PICKAXE` | Swing with nothing equipped |
-| `NOT_ENOUGH_STAMINA` | Swing cost, or a run move while under 4 stamina |
+| `NOT_ENOUGH_STAMINA` | Swing cost is above current stamina |
+| `SWING_IN_PROGRESS` | Another mine request arrives before `swing_ends_at` |
 | `INVENTORY_FULL` | Swing or purchase needs a slot the player does not have |
 | `INSUFFICIENT_GOLD` | Buy quote, not enough gold |
 | `INSUFFICIENT_ITEMS` | Sell quote, stack shrunk or missing |
@@ -214,7 +215,7 @@ Mithril description includes the local nickname Bluebonnet Quartz.
 ## Tool Contracts
 
 ### `get_player_state(player_id)`
-Returns mining level, XP, XP required for the next level (null at 10), HP, max HP, stamina, max stamina, movement mode, gold, location, the presented rock (ore id, name, XP, stamina cost) or null, equipped pickaxe (id, name, tier), equipped clothing (id, name, modifiers or null), `mastery_badge_earned`, inventory rows (id, name, type, quantity), and `{npc_id, rapport_score}` for every NPC.
+Returns mining level, XP, XP required for the next level (null at 10), HP, max HP, stamina, max stamina, gold, location, the presented rock (ore id, name, XP, stamina cost, swing seconds) or null, `swing_ends_at`, equipped pickaxe (id, name, tier), equipped clothing (id, name, modifiers or null), `mastery_badge_earned`, inventory rows (id, name, type, quantity), and `{npc_id, rapport_score}` for every NPC.
 
 ### `list_mine_levels(player_id)`
 For each floor: level number, entry requirement, whether it is locked, and each ore with weight, unlocked flag, required Mining Level, required pickaxe tier, and the stamina cost for the player's current pickaxe. The UI builds lock hints from these fields (`STYLE_GUIDE.md`).
@@ -223,22 +224,19 @@ For each floor: level number, entry requirement, whether it is locked, and each 
 Catalog rows the store sells (pickaxes, clothing) and ores the store buys, with `base_value` and whether the player already owns that gear row. Quoted prices come only from `get_store_quote`.
 
 ### `move(player_id, location)`
-`saloon` and `mining_quarter` are always allowed. `mine_N` requires `mining_level >= required_mining_level`. In `run` mode the move costs 4 stamina and fails with `NOT_ENOUGH_STAMINA` without changing location when stamina is below 4. In `walk` mode the move is free. Success sets `current_location`. Entering a mine floor spawns `presented_ore_id`. Leaving a mine floor clears it.
-
-### `set_movement_mode(player_id, mode)`
-`walk` or `run`. The toggle itself does not spend stamina.
+`saloon` and `mining_quarter` are always allowed. `mine_N` requires `mining_level >= required_mining_level`. Every move is free. Success sets `current_location`. Entering a mine floor spawns `presented_ore_id`. Leaving a mine floor clears it and clears `swing_ends_at`.
 
 ### `tick(player_id, elapsed_ms)`
-Adds `elapsed_ms` to `stamina_bank_ms`. Every 1000 stored milliseconds restore 2 stamina, in either movement mode, and subtract those milliseconds. Clamp stamina to `0…max_stamina`. This does not run inside `mine_ore`. Clients do not edit stamina themselves.
+Adds `elapsed_ms` to `stamina_bank_ms`. Every 1000 stored milliseconds restore 2 stamina and subtract those milliseconds. Clamp stamina to `0…max_stamina`. Clients do not edit stamina themselves.
 
 ### `mine_ore(player_id, mine_level)`
-Requires `current_location == mine_{level}`, entry level met, a pickaxe equipped, and a `presented_ore_id` the player can mine.
+Requires `current_location == mine_{level}`, entry level met, a pickaxe equipped, a `presented_ore_id` the player can mine, and `swing_ends_at` in the past or empty. If a swing is still running, return `SWING_IN_PROGRESS` and change nothing.
 
 Pickaxe cost = `max(4, base_stamina − 2 × (pickaxe_tier − required_pickaxe_tier))`. Clothing then applies: `max(1, ceil(pickaxe_cost × (1 − stamina_modifier / 100)))`. The modifier is 0 when nothing is equipped, and never above 30.
 
-If stamina is below that cost, return `NOT_ENOUGH_STAMINA` and change nothing. If the ore needs a new slot and the inventory is full, return `INVENTORY_FULL` and change nothing. Otherwise add 1, then with `yield_modifier` percent chance add 1 more of the same ore, capped at 9,999. Add `xp_per_mine × quantity`, recompute Mining Level, spend stamina, award the mastery badge if level 10 was just reached, and spawn the next rock.
+If stamina is below that cost, return `NOT_ENOUGH_STAMINA` and change nothing. If the ore needs a new slot and the inventory is full, return `INVENTORY_FULL` and change nothing. Otherwise set `swing_ends_at` to now plus the ore's `swing_seconds`, add 1, then with `yield_modifier` percent chance add 1 more of the same ore, capped at 9,999. Add `xp_per_mine × quantity`, recompute Mining Level, spend stamina, and award the mastery badge if level 10 was just reached. The next rock is spawned only when `swing_ends_at` is reached, not on the click.
 
-Returns `ore_id`, `quantity`, `xp_gained`, `stamina_spent`, `mining_level`, `mastery_badge_earned`, and the next presented ore.
+Returns `ore_id`, `quantity`, `xp_gained`, `stamina_spent`, `swing_ends_at`, `mining_level`, and `mastery_badge_earned`.
 
 ### `equip_item(player_id, item_id)`
 Item must be in inventory and be a pickaxe or clothing. Sets `current_pickaxe_id` or `equipped_clothing_id`. The row stays in the inventory. If the presented rock is no longer mineable with the equipped pickaxe, spawn a new one.

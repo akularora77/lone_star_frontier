@@ -8,7 +8,8 @@ v1.0 can ship against the Lovable mock tests in `src/`. This file is the later R
 - **Quote integrity:** A quote stores quantity, unit, and total. `execute_trade` applies that exact quantity once. Expired or consumed quotes fail. Gold and stacks stay consistent.
 - **Floor access:** `move` and `mine_ore` reject a floor when Mining Level is below `required_mining_level`.
 - **Ore filter:** A swing never returns an ore the player's Mining Level or pickaxe tier has not unlocked. On floors 5–10 the weight table still contains the lower ores, and those ores can drop.
-- **Stamina:** A swing below the ore-and-pickaxe cost fails and changes nothing. Cost is `max(4, base_stamina − 2 × extra pickaxe tiers)` before clothing. `tick` restores 2 per second while standing, talking, or walking, in either toggle, and keeps leftover milliseconds. A run move costs 4. Standing in `run` mode still restores stamina. XP for a swing is `xp_per_mine × quantity`.
+- **Stamina:** A swing below the ore-and-pickaxe cost fails and changes nothing. Cost is `max(4, base_stamina − 2 × extra pickaxe tiers)` before clothing. `tick` restores 2 per second and keeps leftover milliseconds. There is no run mode. XP for a swing is `xp_per_mine × quantity`.
+- **Swing time:** A second `mine_ore` before `swing_ends_at` returns `SWING_IN_PROGRESS` and does not grant another ore. The next rock is absent until the swing duration ends. Copper takes 2 seconds. Mithril takes 4.
 - **Inventory:** Ores stack in one slot up to 9,999. A swing that cannot place its ore returns `INVENTORY_FULL` and changes nothing. Gear does not stack.
 - **Badge:** `mastery_badge_earned` becomes true only when Mining Level becomes 10, and it does not flip back.
 - **Rapport clamp:** Suggested deltas outside −5…+5 are clamped. The stored score stays inside 0…100. A message does not also receive a flat +1.

@@ -4,7 +4,7 @@
 GitHub `main` is the single source of truth for specs, schema, evals, and code. Lovable and Replit pull `main` and build against it.
 
 1. **GitHub (`main`):** Specs and versioning. Shared specs (`PRD.md`, `SCHEMA.md`, `EVALS.md`, `STYLE_GUIDE.md`, `CONTEXT.md`, `AGENTS.md`) change here.
-2. **Lovable (frontend):** Reads those specs from `main`. Owns `src/` only. Presents the game and holds client state. It does not edit spec files.
+2. **Lovable (frontend):** Pulls `main`. Reads **Recent changes** at the top of `PRD.md` first and applies that list to the prototype, then the rest of the specs. Owns `src/` only. It does not edit spec files.
 3. **Replit (backend & evals):** Pulls `main`. Owns `evals/`, `server/`, and backend logic. Gemini API, Supabase PostgreSQL, deterministic game rules, and the Python eval harness.
 
 ## Who Edits Specs

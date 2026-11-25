@@ -21,14 +21,15 @@ Loaded from the root head, which lives under `src/` so the frontend boundary sti
 One game screen. Locations are state, not routes. Layout is three regions:
 
 ### A. Sidebar (right, fixed)
-- **StatsPanel:** HP, Stamina, Mining Level, XP progress to the next level. HP stays full in v1.0. A walk/run toggle sits with stamina. At Mining Level 10 the XP bar reads full.
+- **StatsPanel:** HP, Stamina, Mining Level, XP progress to the next level. HP stays full in v1.0. There is no walk/run toggle. At Mining Level 10 the XP bar reads full.
 - **InventoryGrid:** 4×7 (28) slots. Ores, pickaxes, and clothing. Stack counts on ores.
 - **BadgeGoldBar:** Gold balance, and the Mine Master badge once `mastery_badge_earned` is true. The slot is empty before that. Sell-all for the selected ore stack starts here and confirms in the quote panel.
 
 ### B. WorldViewport (center)
 - **LocationNav:** Saloon, Mining Quarter, and all 10 floors. A locked floor shows `Requires Mining Level {n}.`
 - **SaloonScene**, **MiningQuarterScene**, **MineLevelScene** (one mine scene, parameterized by floor).
-- On a floor, **MineLevelScene** shows the one rock currently up, with its name and stamina cost, before the swing. Each ore in the floor's mix that the player has not unlocked shows `{Ore} unlocks at Mining Level {n} with a {pickaxe}.` Copy is built from `list_mine_levels`. It is not written by an NPC.
+- **Viewpoint (v1.0):** A fixed third-person view, in the spirit of RuneScape: the player character and the place are in front of the camera. In the mine, the character stands in the chamber with the one rock. Clicking the rock walks the character to it and plays the swing for that ore's `swing_seconds`. The rock does not change until the swing ends. Extra clicks during the swing do nothing. Saloon and Mining Quarter use the same fixed camera and character. Location changes stay on **LocationNav**. A free camera, a run button, and a walkable town street are out of scope for this pass.
+- On a floor, **MineLevelScene** shows the one rock currently up, with its name, stamina cost, and swing time, before the swing. Each ore in the floor's mix that the player has not unlocked shows `{Ore} unlocks at Mining Level {n} with a {pickaxe}.` Copy is built from `list_mine_levels`. It is not written by an NPC.
 
 ### C. DialogueHud (bottom)
 - **Portrait** of the NPC.
@@ -45,9 +46,9 @@ CSS shapes or generic icons:
 - **Portraits:** Placeholder frames keyed by `portrait_store_manager`, `portrait_bartender`, `portrait_prospector`.
 
 ## 4. UI Feedback & Animations
-- **Mining:** A short progress bar or a shake on the rock being mined.
+- **Mining:** The swing animation fills that ore's `swing_seconds`. The rock stays put until the animation ends.
 - **XP gain:** Floating text (for example `+10 XP`) that fades upward. Show `+20 XP` when a bonus ore also dropped, matching `xp_gained`.
-- **Stamina:** The walk/run toggle and the bar updating from `tick` results.
+- **Stamina:** The bar updates from `tick`. There is no run toggle.
 - **Rapport:** The meter steps by the returned delta. A downward step is visible when the player is hostile.
 
 ## 5. Component Home

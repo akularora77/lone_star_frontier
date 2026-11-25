@@ -7,7 +7,7 @@
 - The game screen is the `/` route. Do not add a route per mine floor.
 - All rules go through `GameService` in `src/game/api.ts`. The method list and the error codes match `SCHEMA.md`.
 - Components import `GameService`. They do not import `mockService` or `httpService`, and they do not compute prices, drops, XP, stamina, locks, or rapport.
-- `tick` only restores stamina. A run spends stamina inside `move`, not inside `tick`. A component timer calls `tick` and stores the snapshot.
+- `tick` only restores stamina. There is no run mode. A second mine click before `swing_ends_at` is refused. A component timer calls `tick` and stores the snapshot.
 - Seed data matches the catalog, XP table, floor table, and ore weights in `SCHEMA.md`.
 - No Lovable Cloud. No Supabase client. No game rules in TanStack server functions.
 
