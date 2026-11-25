@@ -13,6 +13,7 @@ Lovable and Replit should propose spec changes in plain language when they hit a
 In this repo, small clarifications can be applied locally and pushed in batches. Major changes to progression, economy, or the AI contract wait for the user's approval before they land on `main`. After a spec push, Lovable and Replit pull `main` before building further.
 
 ## Lovable Client (v1.0)
+- The v1 prototype is 2D and top-down. Replit integrates against it. A 3D follow view may be built in parallel and calls the same `GameService`.
 - TanStack Start. One route, `/`, holds the whole game screen. Locations are state.
 - Player snapshot and UI state live in a React context/reducer under `src/game/`.
 - `src/game/api.ts` defines a `GameService` interface that mirrors the `SCHEMA.md` contracts, including `tick`.

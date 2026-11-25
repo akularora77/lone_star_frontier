@@ -5,6 +5,7 @@
 ## Lovable (frontend)
 - Edit `src/` only. That includes the TanStack root head, `src/styles.css`, `src/game/`, and mock tests.
 - The game screen is the `/` route. Do not add a route per mine floor.
+- The v1 view is 2D and top-down. A parallel 3D view uses the same `GameService`.
 - All rules go through `GameService` in `src/game/api.ts`. The method list and the error codes match `SCHEMA.md`.
 - Components import `GameService`. They do not import `mockService` or `httpService`, and they do not compute prices, drops, XP, stamina, locks, or rapport.
 - `tick` only restores stamina. There is no run mode. A second mine click before `swing_ends_at` is refused. A component timer calls `tick` and stores the snapshot.

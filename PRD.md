@@ -4,10 +4,11 @@
 Lovable: apply this section to the prototype first. It is the only list of what just changed. The changelog below is history.
 
 **2026-11-24**
+- **v1 is a 2D client.** Replit integrates against this prototype. The view is top-down, and the character still paths. A 3D view that follows from behind may be built in parallel. It uses the same `GameService` and does not keep its own rules. See `STYLE_GUIDE.md`, **Viewpoint (v1.0)**.
 - **Rocks take repeated swings, then stay empty.** A rock does not grant ore on the first click and does not come back when the swing ends. Swings to break it start at 3 copper, 4 iron, 5 silver, 6 gold, 8 mithril, and drop by 1 for each Mining Level above the ore's requirement and each pickaxe tier above its minimum, to a minimum of 1. After it breaks, that spot stays empty for 10s, 15s, 20s, 30s, or 45s. Each floor has 3 spots. See **4a** and **4b**.
 - **Remove running.** No walk/run toggle and no stamina drain while standing. Stamina restores at 2 per second while standing, talking, or walking. See section 3, **Stamina**.
-- **A swing takes time.** Copper 2s, iron 2.5s, silver 3s, gold 3.5s, mithril 4s. Another click during the swing does nothing. The next rock appears only when the swing ends. See **4a** and **4b**.
-- **The character paths.** Boomtown is one walkable path connecting the Saloon, the General Store, and the mine entrance. Click ground, a person, or the rock and the character walks there. The camera follows. Each mine floor is a chamber: walk to the rock to swing, walk down for the next floor, walk up on floor 1 to leave. No mouse-look, no run, no second town. See `STYLE_GUIDE.md`, **Viewpoint (v1.0)**.
+- **A swing takes time.** Copper 2s, iron 2.5s, silver 3s, gold 3.5s, mithril 4s. Another click during the swing does nothing. See **4a** and **4b**.
+- **The character paths.** Boomtown is one walkable path connecting the Saloon, the General Store, and the mine entrance. Click ground, a person, or a rock and the character walks there. Each mine floor is a chamber: walk to a rock to swing, walk down for the next floor, walk up on floor 1 to leave. No mouse-look, no run, no second town. See `STYLE_GUIDE.md`, **Viewpoint (v1.0)**.
 
 ## Document Control & Changelog
 - **Active Version:** v1.0 (Core Mining Loop & Boomtown Hub)
@@ -18,6 +19,7 @@ Lovable: apply this section to the prototype first. It is the only list of what 
   - **v1.0 (amended):** Stamina comes from the ore and the pickaxe. Each Mining Level takes more swings of the best available ore than the level before it. Price is a rapport formula. Hit points do not change in v1.0.
   - **v1.0 (amended):** No running in v1.0. A swing takes the ore's duration, and the next rock appears only when that swing ends.
   - **v1.0 (amended):** Breaking a rock takes several swings, fewer with a higher Mining Level or a better pickaxe. A broken spot stays empty until its respawn timer.
+  - **v1.0 (amended):** The v1 client is 2D and top-down. A 3D follow view is a parallel prototype on the same GameService.
 
 ## 1. Terminology & Variables (SSoT for Names)
 To allow for easy rebranding, all entities use the following "Master Names" which should be centralized in the code:
