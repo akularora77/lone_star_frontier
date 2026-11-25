@@ -28,7 +28,7 @@ One game screen. Locations are state, not routes. Layout is three regions:
 ### B. WorldViewport (center)
 - **LocationNav:** Saloon, Mining Quarter, and all 10 floors. A locked floor shows `Requires Mining Level {n}.`
 - **SaloonScene**, **MiningQuarterScene**, **MineLevelScene** (one mine scene, parameterized by floor).
-- On a floor, each ore in the drop table that the player has not unlocked shows `{Ore} unlocks at Mining Level {n} with a {pickaxe}.` Copy is built from `list_mine_levels`. It is not written by an NPC.
+- On a floor, **MineLevelScene** shows the one rock currently up, with its name and stamina cost, before the swing. Each ore in the floor's mix that the player has not unlocked shows `{Ore} unlocks at Mining Level {n} with a {pickaxe}.` Copy is built from `list_mine_levels`. It is not written by an NPC.
 
 ### C. DialogueHud (bottom)
 - **Portrait** of the NPC.
@@ -45,7 +45,7 @@ CSS shapes or generic icons:
 - **Portraits:** Placeholder frames keyed by `portrait_store_manager`, `portrait_bartender`, `portrait_prospector`.
 
 ## 4. UI Feedback & Animations
-- **Mining:** A short progress bar or a shake on the ore that dropped.
+- **Mining:** A short progress bar or a shake on the rock being mined.
 - **XP gain:** Floating text (for example `+10 XP`) that fades upward. Show `+20 XP` when a bonus ore also dropped, matching `xp_gained`.
 - **Stamina:** The walk/run toggle and the bar updating from `tick` results.
 - **Rapport:** The meter steps by the returned delta. A downward step is visible when the player is hostile.

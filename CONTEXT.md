@@ -16,7 +16,7 @@ In this repo, small clarifications can be applied locally and pushed in batches.
 - TanStack Start. One route, `/`, holds the whole game screen. Locations are state.
 - Player snapshot and UI state live in a React context/reducer under `src/game/`.
 - `src/game/api.ts` defines a `GameService` interface that mirrors the `SCHEMA.md` contracts, including `tick`.
-- `mockService.ts` seeds the catalog, 10 floors, ore weights, and three NPCs. It enforces the price band, floor locks, ore filter, stamina, inventory, and rapport clamp. Rapport and prices in the mock use the stand-ins in `SCHEMA.md`.
+- `mockService.ts` seeds the catalog, 10 floors, ore weights, and three NPCs. It enforces the price formula, floor locks, ore filter, ore-and-pickaxe stamina, inventory, and rapport clamp from `SCHEMA.md`. Its only stand-in is the keyword list for rapport.
 - A later `httpService.ts` calls the Replit API through a base URL setting. Components depend on `GameService` only. A setting chooses the implementation.
 - The reducer stores the latest service snapshot. Timers call `tick`. Components do not add or subtract gold, XP, stamina, or rapport.
 - The mock keeps the player in memory. `localStorage` is not the player record.

@@ -6,6 +6,7 @@
 - **Changelog:**
   - **v1.0:** Initial v1 scope—Boomtown hub, 10-level Mine, 5-tier ore ladder, 4 player stats, progressive Ranger Badges, dynamic LLM store pricing, and lore-grounded townspeople.
   - **v1.0 (amended):** Mixed ore drops per floor, ore unlocks separate from floor entry, one Mine Level 10 Badge, semantic rapport, and stamina regen while walking or idle. Seed numbers for these rules live in `SCHEMA.md`.
+  - **v1.0 (amended):** Stamina comes from the ore and the pickaxe. Each Mining Level takes more swings of the best available ore than the level before it. Price is a rapport formula. Hit points do not change in v1.0.
 
 ## 1. Terminology & Variables (SSoT for Names)
 To allow for easy rebranding, all entities use the following "Master Names" which should be centralized in the code:
@@ -28,52 +29,52 @@ To allow for easy rebranding, all entities use the following "Master Names" whic
 ## 3. Player Stats & Movement Mechanics (v1.0)
 - **Mining Level:** Determines which mine levels and ores are unlocked.
 - **Experience (XP):** Earned by mining ores; drives Mining Level progression.
-- **Hit Points (HP) / Health:** Core character vitality stat.
-- **Stamina:** Players can toggle between **Walking** and **Running**; running drains stamina at 4 per second. Walking or sitting idle restores stamina at 2 per second, everywhere including the mine.
+- **Hit Points (HP) / Health:** Core character vitality stat. Shown in the sidebar. It does not change in v1.0.
+- **Stamina:** Players can toggle between **Walking** and **Running**. Standing still, talking, and walking restore stamina at 2 per second, everywhere including the mine, even if the toggle is set to run. A run between two locations costs 4 stamina. A walk costs none. A swing spends that ore's stamina once.
 
 ## 4. Core Gameplay Loop & Progression (v1.0)
 - **Gameplay Loop:** Mine ore across levels 1–10 -> Gather ore in inventory -> Keep ore or sell ore to the General Store NPC for gold -> Buy upgraded pickaxes and clothing -> Unlock deeper mine levels and earn the Mine Level 10 Badge. Players can also separately interact and converse with NPCs outside of transactions.
 - **Skill (1 total in v1.0):** **Mining** — custom Wild West themed ore progression ladder modeled on RuneScape across 10 mine levels:
   - Different ores yield varying experience (XP) and gold values.
-  - **4a. Ores:** Five ores. A higher Mining Level and the matching pickaxe unlock the next ore. Lone Star Mithril is one ore; Bluebonnet Quartz is another name for it.
-    - Red Dirt Copper — Mining 1, Rusty Pickaxe, 10 XP
-    - Pecos Iron — Mining 3, Iron Pickaxe, 20 XP
-    - Brazos Silver — Mining 5, Steel Pickaxe, 35 XP
-    - Alamo Gold — Mining 7, Reinforced Pickaxe, 55 XP
-    - Lone Star Mithril — Mining 9, Masterwork Pickaxe, 80 XP
-  - **4b. Floors:** A swing rolls one ore from that floor's weights. Ores the player has not unlocked are left out, and the remaining weights fill the roll. From floor 5 up, older ores stay in the mix.
-    | Floor | Enter at | Copper | Iron | Silver | Gold | Mithril | Stamina |
-    | :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: |
-    | 1–2 | Mining 1 | 100 | — | — | — | — | 5 |
-    | 3 | Mining 2 | 80 | 20 | — | — | — | 8 |
-    | 4 | Mining 3 | 60 | 40 | — | — | — | 8 |
-    | 5 | Mining 4 | 40 | 40 | 20 | — | — | 12 |
-    | 6 | Mining 5 | 25 | 35 | 40 | — | — | 12 |
-    | 7 | Mining 6 | 20 | 25 | 30 | 25 | — | 16 |
-    | 8 | Mining 7 | 15 | 20 | 25 | 40 | — | 16 |
-    | 9 | Mining 8 | 12 | 15 | 20 | 28 | 25 | 20 |
-    | 10 | Mining 9 | 10 | 12 | 18 | 25 | 35 | 20 |
-  - **4c. XP:** XP is the XP of the ore received. Mining Level is the highest level whose total XP the player has reached.
-    | Mining Level | Total XP |
-    | :--- | ---: |
-    | 1 | 0 |
-    | 2 | 80 |
-    | 3 | 200 |
-    | 4 | 400 |
-    | 5 | 700 |
-    | 6 | 1,100 |
-    | 7 | 1,600 |
-    | 8 | 2,300 |
-    | 9 | 3,200 |
-    | 10 | 4,400 |
+  - **4a. Ores:** Five ores. A higher Mining Level and the matching pickaxe unlock the next ore. Stamina and XP come from the ore and the pickaxe, not from the floor. Lone Star Mithril is one ore; Bluebonnet Quartz is another name for it.
+    - Red Dirt Copper — Mining 1, Rusty Pickaxe, 10 XP, 6 stamina
+    - Pecos Iron — Mining 3, Iron Pickaxe, 24 XP, 8 stamina
+    - Brazos Silver — Mining 5, Steel Pickaxe, 45 XP, 10 stamina
+    - Alamo Gold — Mining 7, Reinforced Pickaxe, 80 XP, 12 stamina
+    - Lone Star Mithril — Mining 9, Masterwork Pickaxe, 140 XP, 14 stamina
+  - **4b. Floors:** One rock is up at a time, chosen from that floor's weights, and it stays until mined. The player sees the ore and its stamina cost before swinging. Ores the player has not unlocked are left out, and the remaining weights fill the roll. From floor 5 up, older ores stay in the mix.
+    | Floor | Enter at | Copper | Iron | Silver | Gold | Mithril |
+    | :--- | :--- | ---: | ---: | ---: | ---: | ---: |
+    | 1–2 | Mining 1 | 100 | — | — | — | — |
+    | 3 | Mining 3 | 70 | 30 | — | — | — |
+    | 4 | Mining 3 | 55 | 45 | — | — | — |
+    | 5 | Mining 5 | 25 | 35 | 40 | — | — |
+    | 6 | Mining 5 | 15 | 25 | 60 | — | — |
+    | 7 | Mining 7 | 12 | 15 | 28 | 45 | — |
+    | 8 | Mining 7 | 10 | 12 | 18 | 60 | — |
+    | 9 | Mining 9 | 8 | 8 | 12 | 27 | 45 |
+    | 10 | Mining 9 | 5 | 8 | 10 | 22 | 55 |
+  - **4c. XP:** XP for a swing is that ore's XP times how many of it you received. Mining Level is the highest level whose total XP the player has reached. Each level takes more swings of the best ore you can mine than the level before it. A cheaper rock on a deep floor still pays that cheaper ore's XP.
+    | Mining Level | Swings of the best ore | Total XP |
+    | :--- | :--- | ---: |
+    | 1 | — | 0 |
+    | 2 | 10 copper | 100 |
+    | 3 | 15 copper | 250 |
+    | 4 | 20 iron | 730 |
+    | 5 | 25 iron | 1,330 |
+    | 6 | 30 silver | 2,680 |
+    | 7 | 35 silver | 4,255 |
+    | 8 | 40 gold | 7,455 |
+    | 9 | 45 gold | 11,055 |
+    | 10 | 50 mithril | 18,055 |
 - **General Store Items:**
-  - **Pickaxes:** Tiered pickaxe progression required to mine higher-tier ores.
+  - **Pickaxes:** Tiered pickaxe progression required to mine higher-tier ores. A pickaxe above an ore's requirement lowers that ore's stamina cost by 2 per extra tier, to a minimum of 4 before clothing.
   - **Clothing:** Provides mining bonuses/benefits (such as stamina preservation or yield bonuses), but is **not** a hard access requirement to enter deeper mine levels.
 - **Win Condition / Progression Arc:** Earning the **Mine Level 10 Badge** at Mining Level 10.
 
 ## 5. AI NPCs & Characters (v1.0)
-- **General Store Manager:** Buys player ores and sells pickaxes and clothing. Uses context-aware dynamic pricing decided by the LLM based on context such as player Mining Level and rapport with the General Store Manager. Rapport starts at 50 with each NPC and changes only when the LLM suggests a delta from what the player said; it can go down.
-- **Townspeople / Saloon Locals:** Pure dialogue, world lore, rumors, and mining hints (such as mine level yields and tips), strictly grounded in the v1.0 game world without referencing unimplemented features.
+- **General Store Manager:** Buys player ores and sells pickaxes and clothing. The player talks to him only while standing in the Mining Quarter. Price comes from rapport with him, not from Mining Level: selling pays `round(base × (0.7 + 0.6 × rapport / 100))`, and buying charges `round(base × (1.3 − 0.6 × rapport / 100))`, clamped to 70–130% of the base value. Rapport starts at 50 with each NPC. A hostile line lowers it, a polite line raises it, and a neutral line can leave it unchanged. The model suggests the change from what the player said, and the server keeps each change inside −5…+5.
+- **Townspeople / Saloon Locals:** Pure dialogue, world lore, rumors, and mining hints (such as mine level yields and tips), strictly grounded in the v1.0 game world without referencing unimplemented features. The player talks to them only while standing in the Saloon.
 
 ## 6. Version-Gated Backlog & Future Roadmap (Out of Scope for v1.0)
 Features below are strictly out of scope for v1.0 and must not be built until promoted into the active spec after clearing their Promotion Gate:

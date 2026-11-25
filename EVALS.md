@@ -4,18 +4,18 @@ v1.0 can ship against the Lovable mock tests in `src/`. This file is the later R
 
 ## 1. Deterministic Component Evals
 - **Contract shape:** API responses match `SCHEMA.md`, including the shared `{code, message}` errors.
-- **Price bounds:** `get_store_quote` never returns a unit price outside `[round(0.7 * base), round(1.3 * base)]`, for both the formula stand-in and a model proposal.
+- **Price formula:** `get_store_quote` returns the rapport formula in `SCHEMA.md` and never a price outside `[round(0.7 * base), round(1.3 * base)]`. The same Mining Level at two rapports differs only by rapport. Two Mining Levels at the same rapport get the same unit price.
 - **Quote integrity:** A quote stores quantity, unit, and total. `execute_trade` applies that exact quantity once. Expired or consumed quotes fail. Gold and stacks stay consistent.
 - **Floor access:** `move` and `mine_ore` reject a floor when Mining Level is below `required_mining_level`.
 - **Ore filter:** A swing never returns an ore the player's Mining Level or pickaxe tier has not unlocked. On floors 5–10 the weight table still contains the lower ores, and those ores can drop.
-- **Stamina:** A swing below the adjusted cost fails and changes nothing. `tick` restores 2/sec while walking and spends 4/sec while running. Running at 0 switches to walk.
+- **Stamina:** A swing below the ore-and-pickaxe cost fails and changes nothing. Cost is `max(4, base_stamina − 2 × extra pickaxe tiers)` before clothing. `tick` restores 2 per second while standing, talking, or walking, in either toggle, and keeps leftover milliseconds. A run move costs 4. Standing in `run` mode still restores stamina. XP for a swing is `xp_per_mine × quantity`.
 - **Inventory:** Ores stack in one slot up to 9,999. A swing that cannot place its ore returns `INVENTORY_FULL` and changes nothing. Gear does not stack.
 - **Badge:** `mastery_badge_earned` becomes true only when Mining Level becomes 10, and it does not flip back.
 - **Rapport clamp:** Suggested deltas outside −5…+5 are clamped. The stored score stays inside 0…100. A message does not also receive a flat +1.
 
 ## 2. Semantic LLM-as-a-Judge Evals
-- **Pricing direction:** Higher General Store Manager rapport produces a better price for the player (higher sell price, lower buy price) inside the band. Mining Level may influence a model proposal and cannot push it outside the band.
-- **Rapport semantics:** Hostile lines (yelling, insults, threats) get a negative delta. Polite or helpful lines get a positive delta. Neutral or repeated compliments can be 0. Magnitude stays inside the guidance in `PRD.md` section 8.
+- **Pricing direction:** Higher General Store Manager rapport produces a better price for the player (higher sell price, lower buy price) inside the band, matching the formula exactly.
+- **Rapport semantics:** Hostile lines (yelling, insults, threats) get a negative delta. Polite or helpful lines get a positive delta. Neutral or repeated compliments can be 0. Magnitude stays inside −5…+5, as in `PRD.md` section 5.
 - **Persona:** NPCs keep a Wild West voice.
 - **Zero-hallucination grounding:** Townspeople do not mention v2.0+ backlog features (bounties, horses, monsters, combat, new cities).
 
