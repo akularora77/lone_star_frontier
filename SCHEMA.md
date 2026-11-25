@@ -224,7 +224,7 @@ For each floor: level number, entry requirement, whether it is locked, and each 
 Catalog rows the store sells (pickaxes, clothing) and ores the store buys, with `base_value` and whether the player already owns that gear row. Quoted prices come only from `get_store_quote`.
 
 ### `move(player_id, location)`
-`saloon` and `mining_quarter` are always allowed. `mine_N` requires `mining_level >= required_mining_level`. Every move is free. Success sets `current_location`. Entering a mine floor spawns `presented_ore_id`. Leaving a mine floor clears it and clears `swing_ends_at`.
+`saloon` and `mining_quarter` are always allowed. `mine_N` requires `mining_level >= required_mining_level`. Every move is free. The client plays the walk first and calls `move` when the character arrives. This call does not simulate the path. Success sets `current_location`. Entering a mine floor spawns `presented_ore_id`. Leaving a mine floor clears it and clears `swing_ends_at`. A locked floor never starts the walk.
 
 ### `tick(player_id, elapsed_ms)`
 Adds `elapsed_ms` to `stamina_bank_ms`. Every 1000 stored milliseconds restore 2 stamina and subtract those milliseconds. Clamp stamina to `0…max_stamina`. Clients do not edit stamina themselves.

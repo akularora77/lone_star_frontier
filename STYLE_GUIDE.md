@@ -26,13 +26,12 @@ One game screen. Locations are state, not routes. Layout is three regions:
 - **BadgeGoldBar:** Gold balance, and the Mine Master badge once `mastery_badge_earned` is true. The slot is empty before that. Sell-all for the selected ore stack starts here and confirms in the quote panel.
 
 ### B. WorldViewport (center)
-- **LocationNav:** Saloon, Mining Quarter, and all 10 floors. A locked floor shows `Requires Mining Level {n}.`
+- **LocationNav:** Saloon, General Store, mine entrance, and floors 1–10. Choosing one starts the same walk as a click in the world. It does not cut the camera there. A locked floor shows `Requires Mining Level {n}.` and the walk does not start.
 - **SaloonScene**, **MiningQuarterScene**, **MineLevelScene** (one mine scene, parameterized by floor).
-- **Viewpoint (v1.0):** One room on screen. The camera sits behind and above the character and does not move. The character is a simple figure in that room. This is the RuneScape feeling of standing somewhere, not a 3D town.
-  - **Mine:** The room holds the character and the one current rock. Click the rock. The character takes a short straight walk to it, then the swing plays for that ore's `swing_seconds`. The walk is cosmetic and costs no stamina. Clicks during the swing do nothing. The rock is replaced only when the swing ends.
-  - **Saloon and Mining Quarter:** Same fixed camera and character. An NPC is a figure in the room. Clicking that figure opens the dialogue HUD. The player does not walk between buildings.
-  - **Changing places:** **LocationNav** only. Choosing Saloon, Mining Quarter, or a floor swaps the room. The character does not path there.
-  - **Not in this pass:** mouse-look, orbit, or zoom; a run control; streets, doors, or pathfinding between buildings; more than one rock in the chamber; custom character or environment models. A capsule, a box room, and the existing ore shapes are enough.
+- **Viewpoint (v1.0):** The character paths. Click the ground, a person, a door, or the rock, and the character walks there. The camera follows from behind and above. It does not orbit or look with the mouse.
+  - **Boomtown is one connected path.** The Saloon, the path between them, the General Store, and the mine entrance are the same walkable place. Click a local or the store manager and the character walks into reach, then the dialogue HUD opens. Click the mine entrance and the character walks to it, then steps into floor 1 when Mining Level allows.
+  - **Mine floors:** Each floor is a chamber with the one current rock and a way up and a way down. Click the rock and the character walks to it, then the swing plays for that ore's `swing_seconds`. The walk costs no stamina. Clicks during the swing do nothing. The rock is replaced only when the swing ends. Clicking down walks to the next floor when it is unlocked. Clicking up on floor 1 walks back out to the mine entrance.
+  - **Not in this pass:** mouse-look, orbit, or zoom; a run control; any town besides Boomtown; more than one rock in a chamber; custom models. A capsule character, a plain path, box buildings, and the existing ore shapes are enough.
 - On a floor, **MineLevelScene** shows the one rock currently up, with its name, stamina cost, and swing time, before the swing. Each ore in the floor's mix that the player has not unlocked shows `{Ore} unlocks at Mining Level {n} with a {pickaxe}.` Copy is built from `list_mine_levels`. It is not written by an NPC.
 
 ### C. DialogueHud (bottom)
