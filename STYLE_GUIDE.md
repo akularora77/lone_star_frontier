@@ -28,7 +28,11 @@ One game screen. Locations are state, not routes. Layout is three regions:
 ### B. WorldViewport (center)
 - **LocationNav:** Saloon, Mining Quarter, and all 10 floors. A locked floor shows `Requires Mining Level {n}.`
 - **SaloonScene**, **MiningQuarterScene**, **MineLevelScene** (one mine scene, parameterized by floor).
-- **Viewpoint (v1.0):** A fixed third-person view, in the spirit of RuneScape: the player character and the place are in front of the camera. In the mine, the character stands in the chamber with the one rock. Clicking the rock walks the character to it and plays the swing for that ore's `swing_seconds`. The rock does not change until the swing ends. Extra clicks during the swing do nothing. Saloon and Mining Quarter use the same fixed camera and character. Location changes stay on **LocationNav**. A free camera, a run button, and a walkable town street are out of scope for this pass.
+- **Viewpoint (v1.0):** One room on screen. The camera sits behind and above the character and does not move. The character is a simple figure in that room. This is the RuneScape feeling of standing somewhere, not a 3D town.
+  - **Mine:** The room holds the character and the one current rock. Click the rock. The character takes a short straight walk to it, then the swing plays for that ore's `swing_seconds`. The walk is cosmetic and costs no stamina. Clicks during the swing do nothing. The rock is replaced only when the swing ends.
+  - **Saloon and Mining Quarter:** Same fixed camera and character. An NPC is a figure in the room. Clicking that figure opens the dialogue HUD. The player does not walk between buildings.
+  - **Changing places:** **LocationNav** only. Choosing Saloon, Mining Quarter, or a floor swaps the room. The character does not path there.
+  - **Not in this pass:** mouse-look, orbit, or zoom; a run control; streets, doors, or pathfinding between buildings; more than one rock in the chamber; custom character or environment models. A capsule, a box room, and the existing ore shapes are enough.
 - On a floor, **MineLevelScene** shows the one rock currently up, with its name, stamina cost, and swing time, before the swing. Each ore in the floor's mix that the player has not unlocked shows `{Ore} unlocks at Mining Level {n} with a {pickaxe}.` Copy is built from `list_mine_levels`. It is not written by an NPC.
 
 ### C. DialogueHud (bottom)

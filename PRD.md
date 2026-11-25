@@ -6,7 +6,7 @@ Lovable: apply this section to the prototype first. It is the only list of what 
 **2026-11-24**
 - **Remove running.** No walk/run toggle and no stamina drain while standing. Stamina restores at 2 per second while standing, talking, or walking. See section 3, **Stamina**.
 - **A swing takes time.** Copper 2s, iron 2.5s, silver 3s, gold 3.5s, mithril 4s. Another click during the swing does nothing. The next rock appears only when the swing ends. See **4a** and **4b**.
-- **Fixed third-person view.** The character and the current place are in frame. In the mine, click the rock, the character walks to it, and the swing plays for that ore's duration. No free camera and no walkable town street in this pass. See `STYLE_GUIDE.md`, **Viewpoint (v1.0)**.
+- **Fixed third-person view, one room at a time.** Camera stays behind the character and does not orbit. In the mine, click the one rock, the character walks to it, and the swing plays. Saloon and Mining Quarter use the same camera. Changing location is still **LocationNav**, not a walk across town. No mouse-look, streets, or extra rocks. See `STYLE_GUIDE.md`, **Viewpoint (v1.0)**.
 
 ## Document Control & Changelog
 - **Active Version:** v1.0 (Core Mining Loop & Boomtown Hub)
