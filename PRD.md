@@ -4,6 +4,7 @@
 Lovable: apply this section to the prototype first. It is the only list of what just changed. The changelog below is history.
 
 **2026-11-24**
+- **Rocks take repeated swings, then stay empty.** A rock does not grant ore on the first click and does not come back when the swing ends. Swings to break it start at 3 copper, 4 iron, 5 silver, 6 gold, 8 mithril, and drop by 1 for each Mining Level above the ore's requirement and each pickaxe tier above its minimum, to a minimum of 1. After it breaks, that spot stays empty for 10s, 15s, 20s, 30s, or 45s. Each floor has 3 spots. See **4a** and **4b**.
 - **Remove running.** No walk/run toggle and no stamina drain while standing. Stamina restores at 2 per second while standing, talking, or walking. See section 3, **Stamina**.
 - **A swing takes time.** Copper 2s, iron 2.5s, silver 3s, gold 3.5s, mithril 4s. Another click during the swing does nothing. The next rock appears only when the swing ends. See **4a** and **4b**.
 - **The character paths.** Boomtown is one walkable path connecting the Saloon, the General Store, and the mine entrance. Click ground, a person, or the rock and the character walks there. The camera follows. Each mine floor is a chamber: walk to the rock to swing, walk down for the next floor, walk up on floor 1 to leave. No mouse-look, no run, no second town. See `STYLE_GUIDE.md`, **Viewpoint (v1.0)**.
@@ -16,6 +17,7 @@ Lovable: apply this section to the prototype first. It is the only list of what 
   - **v1.0 (amended):** Mixed ore drops per floor, ore unlocks separate from floor entry, one Mine Level 10 Badge, semantic rapport, and stamina regen while walking or idle. Seed numbers for these rules live in `SCHEMA.md`.
   - **v1.0 (amended):** Stamina comes from the ore and the pickaxe. Each Mining Level takes more swings of the best available ore than the level before it. Price is a rapport formula. Hit points do not change in v1.0.
   - **v1.0 (amended):** No running in v1.0. A swing takes the ore's duration, and the next rock appears only when that swing ends.
+  - **v1.0 (amended):** Breaking a rock takes several swings, fewer with a higher Mining Level or a better pickaxe. A broken spot stays empty until its respawn timer.
 
 ## 1. Terminology & Variables (SSoT for Names)
 To allow for easy rebranding, all entities use the following "Master Names" which should be centralized in the code:
@@ -46,12 +48,13 @@ To allow for easy rebranding, all entities use the following "Master Names" whic
 - **Skill (1 total in v1.0):** **Mining** — custom Wild West themed ore progression ladder modeled on RuneScape across 10 mine levels:
   - Different ores yield varying experience (XP) and gold values.
   - **4a. Ores:** Five ores. A higher Mining Level and the matching pickaxe unlock the next ore. Stamina and XP come from the ore and the pickaxe, not from the floor. Lone Star Mithril is one ore; Bluebonnet Quartz is another name for it.
-    - Red Dirt Copper — Mining 1, Rusty Pickaxe, 10 XP, 6 stamina, 2 second swing
-    - Pecos Iron — Mining 3, Iron Pickaxe, 24 XP, 8 stamina, 2.5 second swing
-    - Brazos Silver — Mining 5, Steel Pickaxe, 45 XP, 10 stamina, 3 second swing
-    - Alamo Gold — Mining 7, Reinforced Pickaxe, 80 XP, 12 stamina, 3.5 second swing
-    - Lone Star Mithril — Mining 9, Masterwork Pickaxe, 140 XP, 14 stamina, 4 second swing
-  - **4b. Floors:** One rock is up at a time, chosen from that floor's weights. The player sees the ore and its stamina cost, then swings. The swing lasts that ore's duration. Another click during the swing does nothing. The next rock appears only when the swing ends. Ores the player has not unlocked are left out, and the remaining weights fill the roll. From floor 5 up, older ores stay in the mix.
+    - Red Dirt Copper — Mining 1, Rusty Pickaxe, 10 XP, 6 stamina, 2 second swing, 3 swings to break, 10 second respawn
+    - Pecos Iron — Mining 3, Iron Pickaxe, 24 XP, 8 stamina, 2.5 second swing, 4 swings to break, 15 second respawn
+    - Brazos Silver — Mining 5, Steel Pickaxe, 45 XP, 10 stamina, 3 second swing, 5 swings to break, 20 second respawn
+    - Alamo Gold — Mining 7, Reinforced Pickaxe, 80 XP, 12 stamina, 3.5 second swing, 6 swings to break, 30 second respawn
+    - Lone Star Mithril — Mining 9, Masterwork Pickaxe, 140 XP, 14 stamina, 4 second swing, 8 swings to break, 45 second respawn
+  - The swing counts above are for a player at that ore's Mining Level with its minimum pickaxe. Each Mining Level above that requirement, and each pickaxe tier above that minimum, removes 1 swing. The count never goes below 1. Iron at Mining 3 with an Iron Pickaxe takes 4 swings. Iron at Mining 5 with an Iron Pickaxe takes 2. A better pickaxe removes swings the same way. The ore and XP are granted only on the swing that breaks the rock.
+  - **4b. Floors:** Each floor has 3 rock spots. A living spot shows one ore, chosen from that floor's weights. The player sees the ore, the swings still left, and the stamina cost. Each swing lasts that ore's duration, and another click during a swing does nothing. When the last swing lands, the spot goes empty. It does not start refreshing during the swings, and it does not come back when the animation ends. It stays empty for that ore's respawn time, then rolls a new ore. Ores the player has not unlocked are left out of the roll. From floor 5 up, older ores stay in the mix.
     | Floor | Enter at | Copper | Iron | Silver | Gold | Mithril |
     | :--- | :--- | ---: | ---: | ---: | ---: | ---: |
     | 1–2 | Mining 1 | 100 | — | — | — | — |
@@ -63,8 +66,8 @@ To allow for easy rebranding, all entities use the following "Master Names" whic
     | 8 | Mining 7 | 10 | 12 | 18 | 60 | — |
     | 9 | Mining 9 | 8 | 8 | 12 | 27 | 45 |
     | 10 | Mining 9 | 5 | 8 | 10 | 22 | 55 |
-  - **4c. XP:** XP for a swing is that ore's XP times how many of it you received. Mining Level is the highest level whose total XP the player has reached. Each level takes more swings of the best ore you can mine than the level before it. A cheaper rock on a deep floor still pays that cheaper ore's XP.
-    | Mining Level | Swings of the best ore | Total XP |
+  - **4c. XP:** XP is granted when a rock breaks, that ore's XP times how many you received. Swings before the breaking swing give no XP. Mining Level is the highest level whose total XP the player has reached. Each level asks for more rocks of the best ore you can mine than the level before it. A cheaper rock on a deep floor still pays that cheaper ore's XP.
+    | Mining Level | Rocks of the best ore | Total XP |
     | :--- | :--- | ---: |
     | 1 | — | 0 |
     | 2 | 10 copper | 100 |

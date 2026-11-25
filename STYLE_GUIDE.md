@@ -30,9 +30,9 @@ One game screen. Locations are state, not routes. Layout is three regions:
 - **SaloonScene**, **MiningQuarterScene**, **MineLevelScene** (one mine scene, parameterized by floor).
 - **Viewpoint (v1.0):** The character paths. Click the ground, a person, a door, or the rock, and the character walks there. The camera follows from behind and above. It does not orbit or look with the mouse.
   - **Boomtown is one connected path.** The Saloon, the path between them, the General Store, and the mine entrance are the same walkable place. Click a local or the store manager and the character walks into reach, then the dialogue HUD opens. Click the mine entrance and the character walks to it, then steps into floor 1 when Mining Level allows.
-  - **Mine floors:** Each floor is a chamber with the one current rock and a way up and a way down. Click the rock and the character walks to it, then the swing plays for that ore's `swing_seconds`. The walk costs no stamina. Clicks during the swing do nothing. The rock is replaced only when the swing ends. Clicking down walks to the next floor when it is unlocked. Clicking up on floor 1 walks back out to the mine entrance.
-  - **Not in this pass:** mouse-look, orbit, or zoom; a run control; any town besides Boomtown; more than one rock in a chamber; custom models. A capsule character, a plain path, box buildings, and the existing ore shapes are enough.
-- On a floor, **MineLevelScene** shows the one rock currently up, with its name, stamina cost, and swing time, before the swing. Each ore in the floor's mix that the player has not unlocked shows `{Ore} unlocks at Mining Level {n} with a {pickaxe}.` Copy is built from `list_mine_levels`. It is not written by an NPC.
+  - **Mine floors:** Each floor is a chamber with 3 rock spots and a way up and a way down. Click a living rock and the character walks to it, then one swing plays for that ore's `swing_seconds`. The walk costs no stamina. Clicks during the swing do nothing. The spot shows the swings still left. On the last swing the rock breaks and the spot stays empty, with the respawn time visible, until that timer ends. Clicking down walks to the next floor when it is unlocked. Clicking up on floor 1 walks back out to the mine entrance.
+  - **Not in this pass:** mouse-look, orbit, or zoom; a run control; any town besides Boomtown; custom models. A capsule character, a plain path, box buildings, and the existing ore shapes are enough.
+- On a floor, **MineLevelScene** shows the 3 spots. A living rock shows its name, swings left, stamina cost, and swing time. An empty spot shows the respawn countdown and cannot be mined. Each ore in the floor's mix that the player has not unlocked shows `{Ore} unlocks at Mining Level {n} with a {pickaxe}.` Copy is built from `list_mine_levels`. It is not written by an NPC.
 
 ### C. DialogueHud (bottom)
 - **Portrait** of the NPC.
@@ -49,7 +49,7 @@ CSS shapes or generic icons:
 - **Portraits:** Placeholder frames keyed by `portrait_store_manager`, `portrait_bartender`, `portrait_prospector`.
 
 ## 4. UI Feedback & Animations
-- **Mining:** The swing animation fills that ore's `swing_seconds`. The rock stays put until the animation ends.
+- **Mining:** Each swing fills that ore's `swing_seconds`. The rock stays, with fewer swings left, until the breaking swing. Then the spot stays empty for the respawn countdown.
 - **XP gain:** Floating text (for example `+10 XP`) that fades upward. Show `+20 XP` when a bonus ore also dropped, matching `xp_gained`.
 - **Stamina:** The bar updates from `tick`. There is no run toggle.
 - **Rapport:** The meter steps by the returned delta. A downward step is visible when the player is hostile.
