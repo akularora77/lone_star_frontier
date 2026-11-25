@@ -7,7 +7,7 @@ v1.0 implementation contract. Product rules are in `PRD.md`. If a number below a
 - `QUOTE_TTL_SECONDS` 60
 - `RAPPORT_START` 50, `RAPPORT_MIN` 0, `RAPPORT_MAX` 100
 - `RAPPORT_DELTA_MIN` −5, `RAPPORT_DELTA_MAX` +5
-- `INVENTORY_SLOTS` 28
+- `INVENTORY_SLOTS` 14
 - `ORE_STACK_CAP` 9999
 - `STAMINA_REGEN_PER_SEC` 2 while standing, talking, or walking. There is no running in v1.0.
 - `PICKAXE_STAMINA_RELIEF` 2 per pickaxe tier above the ore's requirement
@@ -36,11 +36,15 @@ Gold, prices, XP, stamina, and rapport are integers. A fractional price rounds t
 - `current_location`: Text (default `saloon`)
 - `current_pickaxe_id`: UUID (FK `items_catalog`, nullable)
 - `equipped_clothing_id`: UUID (FK `items_catalog`, nullable)
+- `equipped_top_id`: UUID (FK `items_catalog`, nullable)
+- `equipped_bottom_id`: UUID (FK `items_catalog`, nullable)
+- `equipped_hat_id`: UUID (FK `items_catalog`, nullable)
+- `pending_swing`: JSONB, nullable
 - `mastery_badge_earned`: Boolean (default false)
 
 Pickaxe tier is not a player column. Read `items_catalog.tier` through `current_pickaxe_id`. HP does not change in v1.0.
 
-A new player starts at the Saloon with the Rusty Pickaxe in inventory and equipped, no clothing, no badge, and rapport 50 with each NPC.
+A new player starts at the Saloon with the Rusty Pickaxe in inventory and equipped, the three starter clothes owned and worn, no bonus clothing, no badge, and rapport 50 with each NPC. That is 4 of `INVENTORY_SLOTS` used. `equipped_clothing_id` starts empty. The bonus slot is the only clothing that changes stamina or yield.
 
 ### 2. `items_catalog`
 - `id`: UUID (PK)
@@ -58,6 +62,7 @@ A new player starts at the Saloon with the Rusty Pickaxe in inventory and equipp
 - `respawn_seconds`: Integer, nullable (ores)
 - `stamina_modifier`: Integer, nullable (clothing, 0–30)
 - `yield_modifier`: Integer, nullable (clothing, 0–25)
+- `outfit_slot`: Text, nullable (`top`, `bottom`, `hat` on clothing)
 
 ### 3. `player_inventory`
 - `id`: UUID (PK)
@@ -184,13 +189,23 @@ Mithril description includes the local nickname Bluebonnet Quartz.
 | Reinforced Pickaxe | 4 | 800 |
 | Masterwork Pickaxe | 5 | 2000 |
 
-**Clothing** (one slot; modifiers are percents)
+**Starter clothes** (owned at the start, worn, never sold)
 
-| Name | Tier | Base value | Stamina | Yield |
-| :--- | ---: | ---: | ---: | ---: |
-| Worn Bandana | 1 | 80 | 10 | 0 |
-| Prospector's Vest | 2 | 200 | 0 | 10 |
-| Trail Duster | 3 | 500 | 20 | 15 |
+| Name | Id | Tier | Base value | Outfit slot |
+| :--- | :--- | ---: | ---: | :--- |
+| Basic Shirt | `basic_top` | 0 | 0 | `top` |
+| Basic Trousers | `basic_bottom` | 0 | 0 | `bottom` |
+| Basic Hat | `basic_hat` | 0 | 0 | `hat` |
+
+No stamina or yield modifier. `list_store_items` omits them. A buy quote for one returns `INVALID_ACTION`.
+
+**Bonus clothing** (one worn at a time, in the top slot; modifiers are percents)
+
+| Name | Tier | Base value | Stamina | Yield | Outfit slot |
+| :--- | ---: | ---: | ---: | ---: | :--- |
+| Worn Bandana | 1 | 80 | 10 | 0 | `top` |
+| Prospector's Vest | 2 | 200 | 0 | 10 | `top` |
+| Trail Duster | 3 | 500 | 20 | 15 | `top` |
 
 ## Shared Error Shape
 `{ "code": string, "message": string }`
@@ -218,33 +233,42 @@ Mithril description includes the local nickname Bluebonnet Quartz.
 ## Tool Contracts
 
 ### `get_player_state(player_id)`
-Returns mining level, XP, XP required for the next level (null at 10), HP, max HP, stamina, max stamina, gold, location, the current floor's 3 spots (index, ore or empty, swings done, swings needed, respawn_at), `swing_ends_at`, equipped pickaxe (id, name, tier), equipped clothing (id, name, modifiers or null), `mastery_badge_earned`, inventory rows (id, name, type, quantity), and `{npc_id, rapport_score}` for every NPC.
+Resolves a pending swing whose `swing_ends_at` has passed, then returns the state. Returns mining level, XP, XP required for the next level (null at 10), HP, max HP, stamina, max stamina, gold, location, `inventory_capacity` (`INVENTORY_SLOTS`), the current floor's spots, `swing_ends_at`, equipped pickaxe (id, name, tier), `equipped_outfit` (`top`, `bottom`, `hat`, each id and name or null), equipped bonus clothing (id, name, modifiers or null), `mastery_badge_earned`, inventory rows (id, name, type, quantity), and `{npc_id, rapport_score}` for every NPC.
+
+Each spot returns index, ore or empty, name, swings done, swings needed, swings left, stamina cost, swing seconds, unlocked, `respawn_at`, `progress`, and `progress_target`. With `N` swings needed and `d` swings already finished, a resting rock has `progress` and `progress_target` at `d / N`. During a swing they move from `d / N` toward `(d + 1) / N`, and `progress_target` is that end. An empty spot is bare ground: the client draws no name and no countdown. The count of spots is `ROCKS_PER_FLOOR`.
 
 ### `list_mine_levels(player_id)`
 For each floor: level number, entry requirement, whether it is locked, and each ore with weight, unlocked flag, required Mining Level, required pickaxe tier, and the stamina cost for the player's current pickaxe. The UI builds lock hints from these fields (`STYLE_GUIDE.md`).
 
 ### `list_store_items(player_id)`
-Catalog rows the store sells (pickaxes, clothing) and ores the store buys, with `base_value` and whether the player already owns that gear row. Quoted prices come only from `get_store_quote`.
+Catalog rows the store sells (pickaxes and bonus clothing) and ores the store buys, with `base_value` and whether the player already owns that gear row. Starter clothes are absent. Quoted prices come only from `get_store_quote`.
 
 ### `move(player_id, location)`
-`saloon` and `mining_quarter` are always allowed. `mine_N` requires `mining_level >= required_mining_level`. Every move is free. The client plays the walk first and calls `move` when the character arrives. This call does not simulate the path. Success sets `current_location`. Entering a mine floor ensures its 3 spots exist. Leaving a floor clears `swing_ends_at` and leaves the spots, including their respawn timers, in place. A locked floor never starts the walk.
+`saloon` and `mining_quarter` are always allowed. `mine_N` requires `mining_level >= required_mining_level`. Every move is free. The client plays the walk first and calls `move` when the character arrives. This call does not simulate the path. Success sets `current_location`. Entering a mine floor ensures its `ROCKS_PER_FLOOR` spots exist. Leaving a floor clears `swing_ends_at`, discards `pending_swing` without granting it, and leaves the spots, including their respawn timers, in place. A locked floor never starts the walk.
 
 ### `tick(player_id, elapsed_ms)`
-Adds `elapsed_ms` to `stamina_bank_ms`. Every 1000 stored milliseconds restore 2 stamina and subtract those milliseconds. Clamp stamina to `0…max_stamina`. Clients do not edit stamina themselves.
+Resolves a pending swing whose `swing_ends_at` has passed. Then adds `elapsed_ms` to `stamina_bank_ms`. Every 1000 stored milliseconds restore 2 stamina and subtract those milliseconds. Clamp stamina to `0…max_stamina`. Clients do not edit stamina themselves.
 
 ### `mine_ore(player_id, mine_level, spot_index)`
-Requires `current_location == mine_{level}`, entry level met, a pickaxe equipped, `spot_index` in 1–3, a living rock the player can mine, and `swing_ends_at` in the past or empty. A swing still running returns `SWING_IN_PROGRESS`. An empty spot returns `ROCK_DEPLETED`. Neither changes anything.
+Requires `current_location == mine_{level}`, entry level met, a pickaxe equipped, `spot_index` in `1…ROCKS_PER_FLOOR`, a living rock the player can mine, and `swing_ends_at` in the past or empty. A swing still running returns `SWING_IN_PROGRESS`. An empty spot returns `ROCK_DEPLETED`. Neither changes anything.
 
 Swings needed = `max(1, base_swings − (mining_level − required_mining_level) − (pickaxe_tier − required_pickaxe_tier))`.
 
-Pickaxe cost = `max(4, base_stamina − 2 × (pickaxe_tier − required_pickaxe_tier))`. Clothing then applies: `max(1, ceil(pickaxe_cost × (1 − stamina_modifier / 100)))`. The modifier is 0 when nothing is equipped, and never above 30.
+Pickaxe cost = `max(4, base_stamina − 2 × (pickaxe_tier − required_pickaxe_tier))`. Bonus clothing then applies: `max(1, ceil(pickaxe_cost × (1 − stamina_modifier / 100)))`. The modifier is 0 when nothing is equipped, and never above 30.
 
-If stamina is below that cost, return `NOT_ENOUGH_STAMINA` and change nothing. Set `swing_ends_at` to now plus `swing_seconds` and spend stamina. If this is not the breaking swing, add 1 to swings done and grant nothing. On the breaking swing, if the ore needs a new slot and the inventory is full, return `INVENTORY_FULL` and change nothing. Otherwise add 1, then with `yield_modifier` percent chance add 1 more of the same ore, capped at 9,999. Add `xp_per_mine × quantity`, recompute Mining Level, award the mastery badge if level 10 was just reached, and set the spot empty until `respawn_seconds` after the swing ends.
+If stamina is below that cost, return `NOT_ENOUGH_STAMINA` and change nothing. On the swing that would break the rock, if the ore needs a new slot and the inventory is full, return `INVENTORY_FULL` and change nothing. Otherwise spend stamina, set `swing_ends_at` to now plus `swing_seconds`, and store `pending_swing`. This call does not add ore, XP, a level, the badge, or `respawn_at`.
 
-Returns `ore_id`, `quantity` (0 until the rock breaks), `xp_gained`, `stamina_spent`, `swings_done`, `swings_needed`, `swing_ends_at`, `respawn_at`, `mining_level`, and `mastery_badge_earned`.
+`pending_swing` holds the spot, the preview quantity, and the preview XP. Quantity is 0 until the breaking swing. On that swing the preview is 1, then with `yield_modifier` percent chance 1 more of the same ore, capped at 9,999. Preview XP is `xp_per_mine × quantity`. The first `get_player_state` or `tick` after `swing_ends_at` applies it once: add the quantity and XP, recompute Mining Level, award the mastery badge if level 10 was just reached, and on the breaking swing set the spot empty until `respawn_seconds` after `swing_ends_at`. Then clear `pending_swing` and `swing_ends_at`.
+
+The client reads state until `swing_ends_at` is null. While that rock stays selected and living, the client calls `mine_ore` again until the rock breaks. The server does not start the next swing.
+
+Returns `ore_id`, `quantity`, `xp_gained`, `stamina_spent`, `swings_done`, `swings_needed`, `swing_ends_at`, `respawn_at`, `mining_level`, and `mastery_badge_earned`. `quantity` and `xp_gained` are the preview. The inventory and XP change on the later read.
 
 ### `equip_item(player_id, item_id)`
-Item must be in inventory and be a pickaxe or clothing. Sets `current_pickaxe_id` or `equipped_clothing_id`. The row stays in the inventory. A living rock the player can no longer mine is left in place until they can, or until they break it with a pickaxe that qualifies.
+Item must be in inventory and be a pickaxe or clothing. A pickaxe sets `current_pickaxe_id`. Clothing fills `equipped_top_id`, `equipped_bottom_id`, or `equipped_hat_id` from `outfit_slot`. Bonus clothing also sets `equipped_clothing_id`. Equipping a starter top clears `equipped_clothing_id` when the top slot had held the bonus item. The row stays in the inventory. A living rock the player can no longer mine is left in place until they can, or until they break it with a pickaxe that qualifies.
+
+### `unequip_item(player_id, item_id)`
+Clothing only. The item must be the one in its outfit slot. That slot becomes empty. If it was `equipped_clothing_id`, that column clears and its modifiers stop. A pickaxe returns `INVALID_ACTION` and stays equipped. The row stays in the inventory.
 
 ### `talk_to_npc(player_id, npc_id, message)`
 NPC must exist and share the player's location. The model sees the persona, the last 20 messages, the current rapport, and the new message. It returns a reply and a suggested `rapport_delta`. A hostile line is negative, a polite line is positive, and a neutral line may be 0. The server clamps the delta to −5…+5, adds it to the stored score, clamps the score to 0…100, and appends the exchange. No flat bonus is added on top.
@@ -255,7 +279,7 @@ The mock stand-in, until Replit is connected: words such as yell, insult, or thr
 
 ### `get_store_quote(player_id, item_id, action_type, quantity)`
 - `sell`: ores only, `1 ≤ quantity ≤ owned`.
-- `buy`: pickaxes and clothing only, quantity 1, not already owned.
+- `buy`: pickaxes and bonus clothing only, quantity 1, not already owned. Starter clothes return `INVALID_ACTION`.
 - Rapport input is the General Store Manager's score only. Mining Level does not change the price.
 - Unit price, for both the mock and Replit, with rapport `r` from 0 to 100:
   - Sell: `round(base * (0.7 + 0.6 * r / 100))`
@@ -266,7 +290,7 @@ The mock stand-in, until Replit is connected: words such as yell, insult, or thr
 Returns `quote_id`, `unit_price`, `quantity`, `total_price`, `expires_at`.
 
 ### `execute_trade(player_id, quote_id)`
-The quote must exist, be unconsumed, and be unexpired. Re-check gold, stack size, ownership, and free slots. Then apply gold and inventory, mark the quote consumed, and if the sold row was equipped, clear that equipment slot. Rapport does not change on a trade.
+The quote must exist, be unconsumed, and be unexpired. Re-check gold, stack size, ownership, and free slots. Then apply gold and inventory, mark the quote consumed, and if the sold row was equipped, clear that pickaxe, bonus slot, or outfit slot. Rapport does not change on a trade. Starter clothes are not a trade.
 
 ## Client Seam
-Lovable mirrors these functions on `GameService` (`AGENTS.md`). Components call the interface. They do not reimplement prices, drops, stamina, level locks, or rapport.
+Lovable mirrors these functions on `GameService` (`AGENTS.md`), including `unequip_item`. Components call the interface. They do not reimplement prices, drops, stamina, level locks, or rapport. `inventory_capacity` and the spot list are the inventory size and the rock count. Components do not write those numbers themselves.

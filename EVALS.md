@@ -1,6 +1,6 @@
-# Lone Star Frontier - Evaluation Blueprint (v1.1)
+# Lone Star Frontier - Evaluation Blueprint (v1.2)
 
-v1.0 can ship against the Lovable mock tests in `src/`. This file is the later Replit gate. It grades the real API, not the keyword mock.
+v1.0 and the second game version can ship before this suite exists. This file is the eval gate after that version. It grades the real API, not the keyword mock.
 
 ## 1. Deterministic Component Evals
 - **Contract shape:** API responses match `SCHEMA.md`, including the shared `{code, message}` errors.
@@ -9,8 +9,8 @@ v1.0 can ship against the Lovable mock tests in `src/`. This file is the later R
 - **Floor access:** `move` and `mine_ore` reject a floor when Mining Level is below `required_mining_level`.
 - **Ore filter:** A swing never returns an ore the player's Mining Level or pickaxe tier has not unlocked. On floors 5–10 the weight table still contains the lower ores, and those ores can drop.
 - **Stamina:** A swing below the ore-and-pickaxe cost fails and changes nothing. Cost is `max(4, base_stamina − 2 × extra pickaxe tiers)` before clothing. `tick` restores 2 per second and keeps leftover milliseconds. There is no run mode. XP for a swing is `xp_per_mine × quantity`.
-- **Swing time:** A second `mine_ore` before `swing_ends_at` returns `SWING_IN_PROGRESS` and does not grant ore. Ore and XP are granted only on the breaking swing. Swings needed fall by 1 per Mining Level above the ore's requirement and per extra pickaxe tier, and never below 1. A broken spot rejects clicks with `ROCK_DEPLETED` until `respawn_seconds` have passed. Copper takes 3 swings and 10 seconds to return at Mining Level 1 with a Rusty Pickaxe. Iron takes 2 swings at Mining Level 5 with an Iron Pickaxe.
-- **Inventory:** Ores stack in one slot up to 9,999. A swing that cannot place its ore returns `INVENTORY_FULL` and changes nothing. Gear does not stack.
+- **Swing time:** A second `mine_ore` before `swing_ends_at` returns `SWING_IN_PROGRESS` and does not grant ore. `mine_ore` spends stamina and returns a preview. Ore and XP land on the next `get_player_state` or `tick` after `swing_ends_at`, and only for the breaking swing. Swings needed fall by 1 per Mining Level above the ore's requirement and per extra pickaxe tier, and never below 1. A broken spot rejects clicks with `ROCK_DEPLETED` until `respawn_seconds` have passed. Copper takes 3 swings and 10 seconds to return at Mining Level 1 with a Rusty Pickaxe. Iron takes 2 swings at Mining Level 5 with an Iron Pickaxe.
+- **Inventory:** `inventory_capacity` is 14. Ores stack in one slot up to 9,999. A breaking swing that cannot place its ore returns `INVENTORY_FULL` and changes nothing. Gear does not stack. A new player owns the Rusty Pickaxe and the three starter clothes. `unequip_item` clears a worn clothing slot. A pickaxe returns `INVALID_ACTION`.
 - **Badge:** `mastery_badge_earned` becomes true only when Mining Level becomes 10, and it does not flip back.
 - **Rapport clamp:** Suggested deltas outside −5…+5 are clamped. The stored score stays inside 0…100. A message does not also receive a flat +1.
 
@@ -27,4 +27,4 @@ v1.0 can ship against the Lovable mock tests in `src/`. This file is the later R
   - Pricing direction and persona: **≥ 90%**
   - Rapport sign (hostile negative, friendly positive): **≥ 90%**
   - Zero-hallucination: **100%**
-- **Promotion rule:** Prompt, model, or core-rules changes do not merge to `main` without passing this suite once v1.1 is the active version.
+- **Promotion rule:** Prompt, model, or core-rules changes do not merge to `main` without passing this suite once v1.2 is the active version.

@@ -4,11 +4,15 @@
 GitHub `main` is the single source of truth for specs, schema, evals, and code. Lovable and Replit pull `main` and build against it.
 
 1. **GitHub (`main`):** Specs and versioning. Shared specs (`PRD.md`, `SCHEMA.md`, `EVALS.md`, `STYLE_GUIDE.md`, `CONTEXT.md`, `AGENTS.md`) change here.
-2. **Lovable (frontend):** Pulls `main`. Reads **Recent changes** at the top of `PRD.md` first and applies that list to the prototype, then the rest of the specs. Owns `src/` only. It does not edit spec files.
+2. **Lovable (frontend):** Connects GitHub from its project settings. That creates a private repo and two-way syncs the app with that repo only. Lovable does not push to `akularora77/lone_star_frontier`. It reads **Recent changes** in `PRD.md` when that file is shown to it. It does not edit spec files.
 3. **Replit (backend & evals):** Pulls `main`. Owns `evals/`, `server/`, and backend logic. Gemini API, Supabase PostgreSQL, deterministic game rules, and the Python eval harness.
 
 ## Who Edits Specs
 Lovable and Replit should propose spec changes in plain language when they hit a blocker. They do not edit the spec files themselves.
+
+When the prototype gains a rule the specs do not already state, Lovable records it in `src/PROTOTYPE_DRIFT.md` in its own repo. Each entry names the prototype behavior, the spec behavior, the `SCHEMA.md` constant if a number is involved, and whether `src/` still contains that number as a literal.
+
+The bridge into this repo copies the app across and leaves the root specs in place: `src/`, `public/`, and the app config files (`package.json`, lockfile, and the TypeScript and Vite config). It does not copy a Lovable `README.md` over this one. Accepted drift entries are then written into the specs and removed from the drift file. Replit builds from this repo, not from the Lovable repo and not from the drift file.
 
 In this repo, small clarifications can be applied locally and pushed in batches. Major changes to progression, economy, or the AI contract wait for the user's approval before they land on `main`. After a spec push, Lovable and Replit pull `main` before building further.
 
@@ -23,10 +27,10 @@ In this repo, small clarifications can be applied locally and pushed in batches.
 - The mock keeps the player in memory. `localStorage` is not the player record.
 - No Lovable Cloud. No Supabase client in `src/`. The browser reaches the database only through Replit.
 - Fonts and the page title are set from the root head inside `src/`.
-- Mock tests live next to the mock under `src/`. They cover the price band, locked floors, the ore filter, stamina, trades, inventory-full, quote expiry, and the rapport clamp. They do not replace the v1.1 harness in `evals/`.
+- Mock tests live next to the mock under `src/`. They cover the price band, locked floors, the ore filter, stamina, trades, inventory-full, quote expiry, and the rapport clamp. They do not replace the later harness in `evals/`.
 
 ## File Ownership
-- **Lovable:** `src/` only, including colocated mock tests and `src/styles.css`.
+- **Lovable:** `src/` only, including colocated mock tests, `src/styles.css`, and `src/PROTOTYPE_DRIFT.md`.
 - **Replit:** `server/`, `evals/`, Supabase, and the Gemini API.
 - **`main` specs:** `PRD.md`, `SCHEMA.md`, `EVALS.md`, `STYLE_GUIDE.md`, `CONTEXT.md`, `AGENTS.md`.
 
@@ -42,7 +46,8 @@ There is one living `PRD.md`. Do not add `PRD_v1.md`, `PRD_v2.md`, and so on.
 
 ### Roadmap
 - **v1.0 (current):** Core mining loop and Boomtown hub.
-- **v1.1:** Eval and guardrail hardening.
+- **v1.1:** A second pass that makes the game better. Its changes are chosen after v1.0 is playable.
+- **v1.2:** Eval and guardrail hardening.
 - **v2.0:** Ore bounties and quests.
 - **v2.1:** Horseback riding.
 - **v3.0:** Combat, monsters, and map expansion.

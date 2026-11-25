@@ -4,6 +4,8 @@
 Lovable: apply this section to the prototype first. It is the only list of what just changed. The changelog below is history.
 
 **2026-11-24**
+- **The prototype's inventory, clothes, and swing timing are the rules.** 14 inventory slots, returned as `inventory_capacity`. Three worn slots: shirt, trousers, hat. The new player wears a basic set plus the Rusty Pickaxe. Bonus clothing still occupies the top slot and is the only clothing with a mining bonus. Clicking clothing takes it off. A pickaxe cannot be taken off. A swing spends stamina immediately. The ore and XP land when that swing's time has passed, on the next state read. The client keeps swinging the selected rock until it breaks. An empty spot is bare ground, with no countdown. See `SCHEMA.md`.
+- **Evals wait.** The version after v1.0 is a second pass on the game. The eval harness comes after that version. Do not build it during v1.0. See section 6.
 - **v1 is a 2D client.** Replit integrates against this prototype. The view is top-down, and the character still paths. A 3D view that follows from behind may be built in parallel. It uses the same `GameService` and does not keep its own rules. See `STYLE_GUIDE.md`, **Viewpoint (v1.0)**.
 - **Rocks take repeated swings, then stay empty.** A rock does not grant ore on the first click and does not come back when the swing ends. Swings to break it start at 3 copper, 4 iron, 5 silver, 6 gold, 8 mithril, and drop by 1 for each Mining Level above the ore's requirement and each pickaxe tier above its minimum, to a minimum of 1. After it breaks, that spot stays empty for 10s, 15s, 20s, 30s, or 45s. Each floor has 3 spots. See **4a** and **4b**.
 - **Remove running.** No walk/run toggle and no stamina drain while standing. Stamina restores at 2 per second while standing, talking, or walking. See section 3, **Stamina**.
@@ -20,6 +22,8 @@ Lovable: apply this section to the prototype first. It is the only list of what 
   - **v1.0 (amended):** No running in v1.0. A swing takes the ore's duration, and the next rock appears only when that swing ends.
   - **v1.0 (amended):** Breaking a rock takes several swings, fewer with a higher Mining Level or a better pickaxe. A broken spot stays empty until its respawn timer.
   - **v1.0 (amended):** The v1 client is 2D and top-down. A 3D follow view is a parallel prototype on the same GameService.
+  - **v1.0 (amended):** The version after v1.0 improves the game. Eval and guardrail hardening comes after that version.
+  - **v1.0 (amended):** Inventory is 14 slots. Clothing has shirt, trousers, and hat slots, with a free starter set. Bonus clothing wears in the shirt slot. Ore and XP land when the swing's time has passed.
 
 ## 1. Terminology & Variables (SSoT for Names)
 To allow for easy rebranding, all entities use the following "Master Names" which should be centralized in the code:
@@ -35,7 +39,7 @@ To allow for easy rebranding, all entities use the following "Master Names" whic
 
 ## 2. World Topology & Locations (v1.0)
 - **Boomtown (Unified Hub):** Collapses the onboarding and town hubs into 1 unified Boomtown containing:
-  - **Onboarding District / Saloon:** Where the character onboards, receives their starter pickaxe, and talks to various townspeople to learn about the basic world.
+  - **Onboarding District / Saloon:** Where the character onboards, receives their starter pickaxe and starter clothes, and talks to various townspeople to learn about the basic world.
   - **Mining Quarter:** Contains the General Store and the entrance to the Mine, keeping all NPCs relevant throughout the entire game.
 - **The Mine (10 Levels):** A vertical 10-level mine where users mine ores. Deeper levels open at higher Mining Levels and lean toward higher-tier ores, while common ores still drop. Upgraded pickaxes unlock those ores rather than the floor itself.
 
@@ -55,8 +59,8 @@ To allow for easy rebranding, all entities use the following "Master Names" whic
     - Brazos Silver — Mining 5, Steel Pickaxe, 45 XP, 10 stamina, 3 second swing, 5 swings to break, 20 second respawn
     - Alamo Gold — Mining 7, Reinforced Pickaxe, 80 XP, 12 stamina, 3.5 second swing, 6 swings to break, 30 second respawn
     - Lone Star Mithril — Mining 9, Masterwork Pickaxe, 140 XP, 14 stamina, 4 second swing, 8 swings to break, 45 second respawn
-  - The swing counts above are for a player at that ore's Mining Level with its minimum pickaxe. Each Mining Level above that requirement, and each pickaxe tier above that minimum, removes 1 swing. The count never goes below 1. Iron at Mining 3 with an Iron Pickaxe takes 4 swings. Iron at Mining 5 with an Iron Pickaxe takes 2. A better pickaxe removes swings the same way. The ore and XP are granted only on the swing that breaks the rock.
-  - **4b. Floors:** Each floor has 3 rock spots. A living spot shows one ore, chosen from that floor's weights. The player sees the ore, the swings still left, and the stamina cost. Each swing lasts that ore's duration, and another click during a swing does nothing. When the last swing lands, the spot goes empty. It does not start refreshing during the swings, and it does not come back when the animation ends. It stays empty for that ore's respawn time, then rolls a new ore. Ores the player has not unlocked are left out of the roll. From floor 5 up, older ores stay in the mix.
+  - The swing counts above are for a player at that ore's Mining Level with its minimum pickaxe. Each Mining Level above that requirement, and each pickaxe tier above that minimum, removes 1 swing. The count never goes below 1. Iron at Mining 3 with an Iron Pickaxe takes 4 swings. Iron at Mining 5 with an Iron Pickaxe takes 2. A better pickaxe removes swings the same way. The ore and XP are granted only for the swing that breaks the rock, and only once that swing's time has passed.
+  - **4b. Floors:** Each floor has 3 rock spots. A living spot shows one ore, chosen from that floor's weights. The player sees the ore, the swings still left, and the stamina cost. Each swing lasts that ore's duration, and another click during a swing does nothing. The client keeps swinging the selected rock until it breaks. When the last swing's time has passed, the spot goes empty. It does not start refreshing during the swings, and it does not come back when the animation ends. It stays empty for that ore's respawn time, then rolls a new ore. While it is empty the ground is bare: no name and no countdown. Ores the player has not unlocked are left out of the roll. From floor 5 up, older ores stay in the mix.
     | Floor | Enter at | Copper | Iron | Silver | Gold | Mithril |
     | :--- | :--- | ---: | ---: | ---: | ---: | ---: |
     | 1–2 | Mining 1 | 100 | — | — | — | — |
@@ -83,7 +87,7 @@ To allow for easy rebranding, all entities use the following "Master Names" whic
     | 10 | 50 mithril | 18,055 |
 - **General Store Items:**
   - **Pickaxes:** Tiered pickaxe progression required to mine higher-tier ores. A pickaxe above an ore's requirement lowers that ore's stamina cost by 2 per extra tier, to a minimum of 4 before clothing.
-  - **Clothing:** Provides mining bonuses/benefits (such as stamina preservation or yield bonuses), but is **not** a hard access requirement to enter deeper mine levels.
+  - **Clothing:** Shirt, trousers, and hat are worn on the character. The starter set has no mining bonus and is not sold. Bonus clothing (stamina preservation or yield) wears in the shirt slot, one at a time, and is **not** a hard access requirement to enter deeper mine levels. Clicking a worn clothing row takes it off. A pickaxe can be swapped and cannot be taken off.
 - **Win Condition / Progression Arc:** Earning the **Mine Level 10 Badge** at Mining Level 10.
 
 ## 5. AI NPCs & Characters (v1.0)
@@ -95,7 +99,8 @@ Features below are strictly out of scope for v1.0 and must not be built until pr
 
 | Target Version | Feature / Epic | Scope Summary | Promotion Gate (Before Building) |
 | :--- | :--- | :--- | :--- |
-| **v1.1** | **Eval & Guardrail Hardening** | Offline golden set + LLM-as-a-Judge (`EVALS.md`), hard price floor/ceiling enforcement, and zero-hallucination lore checks. | v1.0 playable end-to-end across Lovable UI + Replit backend. |
-| **v2.0** | **Ore Bounty Giver & Quests** | Ore-focused bounty NPC and multi-step quests to earn skill experience and gold. | v1.1 eval suite passes at >= 95% across store pricing & lore grounding. |
+| **v1.1** | **Second game version** | A second pass that makes the game better. What changes is decided after v1.0 is playable. This version is not the eval harness. | v1.0 playable end-to-end across Lovable UI + Replit backend. |
+| **v1.2** | **Eval & Guardrail Hardening** | Offline golden set + LLM-as-a-Judge (`EVALS.md`), hard price floor/ceiling enforcement, and zero-hallucination lore checks. | v1.1 playable end-to-end. |
+| **v2.0** | **Ore Bounty Giver & Quests** | Ore-focused bounty NPC and multi-step quests to earn skill experience and gold. | v1.2 eval suite passes at >= 95% across store pricing & lore grounding. |
 | **v2.1** | **Horseback Riding Skill** | Wild horse progression loop: feeding horses in the wild -> becoming friends -> taming them to ride -> riding for experience across horse difficulty tiers. | v2.0 quest state schema and bounty contracts verified in Supabase. |
 | **v3.0** | **Monsters, Combat & Map Expansion** | Mine enemies, roaming low-level monsters that attack the player, combat mechanics, additional skills, deeper skill trees, and new cities/map regions. | Multi-skill progression validated (>80% full journey completion). |

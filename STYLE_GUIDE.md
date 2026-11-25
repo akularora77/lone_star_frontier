@@ -22,7 +22,7 @@ One game screen. Locations are state, not routes. Layout is three regions:
 
 ### A. Sidebar (right, fixed)
 - **StatsPanel:** HP, Stamina, Mining Level, XP progress to the next level. HP stays full in v1.0. There is no walk/run toggle. At Mining Level 10 the XP bar reads full.
-- **InventoryGrid:** 4×7 (28) slots. Ores, pickaxes, and clothing. Stack counts on ores.
+- **InventoryGrid:** `inventory_capacity` slots (14). Ores, pickaxes, and clothing. Stack counts on ores. The character wears the shirt, trousers, and hat from `equipped_outfit`.
 - **BadgeGoldBar:** Gold balance, and the Mine Master badge once `mastery_badge_earned` is true. The slot is empty before that. Sell-all for the selected ore stack starts here and confirms in the quote panel.
 
 ### B. WorldViewport (center)
@@ -31,9 +31,9 @@ One game screen. Locations are state, not routes. Layout is three regions:
 - **Viewpoint (v1.0):** The character paths. Click the ground, a person, a door, or a rock, and the character walks there. The v1 view is 2D, seen from above. This is the client Replit integrates.
   - **3D, in parallel:** A second view may follow the character from behind and above. A capsule character, a plain path, box buildings, and the existing ore shapes are enough. It calls the same `GameService`. It does not orbit or look with the mouse, and it does not keep its own stamina, drops, prices, or respawn timers.
   - **Boomtown is one connected path.** The Saloon, the path between them, the General Store, and the mine entrance are the same walkable place. Click a local or the store manager and the character walks into reach, then the dialogue HUD opens. Click the mine entrance and the character walks to it, then steps into floor 1 when Mining Level allows.
-  - **Mine floors:** Each floor is a chamber with 3 rock spots and a way up and a way down. Click a living rock and the character walks to it, then one swing plays for that ore's `swing_seconds`. The walk costs no stamina. Clicks during the swing do nothing. The spot shows the swings still left. On the last swing the rock breaks and the spot stays empty, with the respawn time visible, until that timer ends. Clicking down walks to the next floor when it is unlocked. Clicking up on floor 1 walks back out to the mine entrance.
+  - **Mine floors:** Each floor is a chamber with 3 rock spots and a way up and a way down. Click a living rock and the character walks to it, then swings for that ore's `swing_seconds`. The walk costs no stamina. Clicks during the swing do nothing. The client keeps that rock selected and swings again until it breaks. The spot shows the swings still left. When the last swing's time has passed, the spot becomes bare ground until the respawn time ends. No name and no countdown. Clicking down walks to the next floor when it is unlocked. Clicking up on floor 1 walks back out to the mine entrance.
   - **Not in this pass:** mouse-look, orbit, or zoom; a run control; any town besides Boomtown; custom models. The 2D client uses the screen in this guide and the CSS shapes in section 3.
-- On a floor, **MineLevelScene** shows the 3 spots. A living rock shows its name, swings left, stamina cost, and swing time. An empty spot shows the respawn countdown and cannot be mined. Each ore in the floor's mix that the player has not unlocked shows `{Ore} unlocks at Mining Level {n} with a {pickaxe}.` Copy is built from `list_mine_levels`. It is not written by an NPC.
+- On a floor, **MineLevelScene** shows the spots from the snapshot. A living rock shows its name, swings left, stamina cost, and swing time. An empty spot is bare ground and cannot be mined. Each ore in the floor's mix that the player has not unlocked shows `{Ore} unlocks at Mining Level {n} with a {pickaxe}.` Copy is built from `list_mine_levels`. It is not written by an NPC.
 
 ### C. DialogueHud (bottom)
 - **Portrait** of the NPC.
@@ -50,7 +50,7 @@ CSS shapes or generic icons:
 - **Portraits:** Placeholder frames keyed by `portrait_store_manager`, `portrait_bartender`, `portrait_prospector`.
 
 ## 4. UI Feedback & Animations
-- **Mining:** Each swing fills that ore's `swing_seconds`. The rock stays, with fewer swings left, until the breaking swing. Then the spot stays empty for the respawn countdown.
+- **Mining:** Each swing fills that ore's `swing_seconds`. The rock stays, with fewer swings left, until the breaking swing's time has passed. Then the spot is bare ground until it returns.
 - **XP gain:** Floating text (for example `+10 XP`) that fades upward. Show `+20 XP` when a bonus ore also dropped, matching `xp_gained`.
 - **Stamina:** The bar updates from `tick`. There is no run toggle.
 - **Rapport:** The meter steps by the returned delta. A downward step is visible when the player is hostile.
