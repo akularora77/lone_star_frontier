@@ -7,10 +7,10 @@ Lovable: apply this section to the prototype first. It is the only list of what 
 Top-down only. 3D is v2.1. Tiles are in `SCHEMA.md`.
 
 - Floor is 20×14. Way up `(1, 7)`. Way down `(18, 7)`, except floor 10.
-- Floors 1–2: 8 rocks, no Rattler.
+- Floors 1–2: 8 rocks.
 - Floors 3–4: 10 rocks. Floors 5–10: 8 rocks.
 - Every rock rolls from that floor's ore weights.
-- Rattler on floors 3–10. One tile, rolled once when the floor is created, then it stays. Reach 3. 10 HP every 2 seconds. It does not move. The player cannot attack it.
+- Every floor has Rattlers. One on floors 1–4, two on 5–8, three on 9–10. Each tile is rolled once, then it stays. Reach 3. A hit is 5 + the floor number, every 2 seconds. They do not move. The player cannot attack them. Overlapping reaches still hit once.
 - A hit does not stop a swing. Walking to another tile does. That swing grants nothing. Stamina already spent stays spent.
 - `set_position` is one tile and needs 400ms. `tick` applies hits.
 - At 0 HP: cancel the swing, HP returns to 100, player goes to `mining_quarter`. Gold, level, and XP stay.
@@ -21,7 +21,7 @@ Top-down only. 3D is v2.1. Tiles are in `SCHEMA.md`.
 - **Active Version:** v2.0 (Dangerous Mine, 2D)
 - **Previous Versions:** v1.0
 - **Changelog:**
-  - **v2.0:** Position on each floor, denser rock layouts, a Rattler with a per-floor tile, a swing the player can walk away from, knockout that keeps the 3 most valuable non-starter rows, and unstacked ore. The client stays 2D. 3D is v2.1.
+  - **v2.0:** Position on each floor, denser rock layouts, Rattlers on every floor that get stronger and more numerous with depth, a swing the player can walk away from, knockout that keeps the 3 most valuable non-starter rows, and unstacked ore. The client stays 2D. 3D is v2.1.
   - **v1.0:** Initial v1 scope—Boomtown hub, 10-level Mine, 5-tier ore ladder, 4 player stats, progressive Ranger Badges, dynamic LLM store pricing, and lore-grounded townspeople.
   - **v1.0 (amended):** Mixed ore drops per floor, ore unlocks separate from floor entry, one Mine Level 10 Badge, semantic rapport, and stamina regen while walking or idle. Seed numbers for these rules live in `SCHEMA.md`.
   - **v1.0 (amended):** Stamina comes from the ore and the pickaxe. Each Mining Level takes more swings of the best available ore than the level before it. Price is a rapport formula. Hit points do not change in v1.0.
@@ -47,7 +47,7 @@ To allow for easy rebranding, all entities use the following "Master Names" whic
 - **Boomtown (Unified Hub):** Collapses the onboarding and town hubs into 1 unified Boomtown containing:
   - **Onboarding District / Saloon:** Where the character onboards, receives their starter pickaxe and starter clothes, and talks to various townspeople to learn about the basic world.
   - **Mining Quarter:** Contains the General Store and the entrance to the Mine, keeping all NPCs relevant throughout the entire game.
-- **The Mine (10 Levels):** A vertical 10-level mine where users mine ores. Deeper levels open at higher Mining Levels and lean toward higher-tier ores, while common ores still drop. Upgraded pickaxes unlock those ores rather than the floor itself. From floor 3, a Rattler stands in the chamber and attacks anyone who walks into its reach.
+- **The Mine (10 Levels):** A vertical 10-level mine where users mine ores. Deeper levels open at higher Mining Levels and lean toward higher-tier ores, while common ores still drop. Upgraded pickaxes unlock those ores rather than the floor itself. From floor 1, Rattlers stand in the chamber and attack anyone who walks into their reach. Deeper floors have more of them, and each hit hurts more.
 
 ## 3. Player Stats & Movement Mechanics (v2.0)
 - **Mining Level:** Determines which mine levels and ores are unlocked.
@@ -69,14 +69,14 @@ To allow for easy rebranding, all entities use the following "Master Names" whic
   - The swing counts above are for a player at that ore's Mining Level with its minimum pickaxe. Each Mining Level above that requirement, and each pickaxe tier above that minimum, removes 1 swing. The count never goes below 1. Iron at Mining 3 with an Iron Pickaxe takes 4 swings. Iron at Mining 5 with an Iron Pickaxe takes 2. A better pickaxe removes swings the same way. The ore and XP are granted only for the swing that breaks the rock, and only once that swing's time has passed.
   - **4b. Floors:** A floor is a 20 by 14 chamber. Spot counts:
 
-    | Floors | Spots | Rattler |
-    | :--- | ---: | :--- |
-    | 1–2 | 8 | No |
-    | 3–4 | 10 | Yes, reach 3 |
-    | 5–10 | 8 | Yes, reach 3 |
+    | Floors | Spots | Rattlers |
+    | :--- | ---: | ---: |
+    | 1–4 | 8 on 1–2, 10 on 3–4 | 1 |
+    | 5–8 | 8 | 2 |
+    | 9–10 | 8 | 3 |
 
     Each living spot rolls one unlocked ore from that floor's weights. The player sees the ore, the swings still left, and the stamina cost. Each swing lasts that ore's duration. Another mine click during a swing does nothing. A hit does not stop the swing. Walking to another tile does, and that swing grants nothing. The client keeps the rock selected until it breaks or the player walks away. When the last swing's time has passed, the spot goes empty for that ore's respawn time, then rolls again. An empty spot is bare ground. Tiles are in `SCHEMA.md`.
-  - **4b2. Rattler:** One stands on floors 3–10. Its tile is rolled once when that floor is created and does not change. It does not move and cannot be attacked. While the player is within 3 tiles, `tick` deals 10 HP every 2 seconds. Leaving the reach stops the hits. At 0 HP the current swing grants nothing, starter clothes are kept, the 3 other rows with the highest catalog base value are kept, every other row is deleted, HP is set to 100, and the location becomes `mining_quarter`. Gold and XP do not change.
+  - **4b2. Rattler:** Every floor has them. Tiles are rolled once when the floor is created and do not change. They do not move and cannot be attacked. A hit is `5 + floor` HP every 2 seconds while the player is within 3 tiles of any of them. Two reaches at once still hit once. Leaving every reach stops the hits. At 0 HP the current swing grants nothing, starter clothes are kept, the 3 other rows with the highest catalog base value are kept, every other row is deleted, HP is set to 100, and the location becomes `mining_quarter`. Gold and XP do not change.
   - **Floor weights:**
     | Floor | Enter at | Copper | Iron | Silver | Gold | Mithril |
     | :--- | :--- | ---: | ---: | ---: | ---: | ---: |

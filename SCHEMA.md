@@ -17,7 +17,7 @@ v2.0 implementation contract. Product rules are in `PRD.md`. If a number below a
 - `FLOOR_WIDTH` 20, `FLOOR_HEIGHT` 14. Tiles are integers, `x` 0–19 and `y` 0–13.
 - `WALK_MS_PER_TILE` 400
 - `MONSTER_REACH` 3 (Euclidean)
-- `MONSTER_HIT_DAMAGE` 10
+- `MONSTER_HIT_DAMAGE` `5 + floor number`
 - `MONSTER_HIT_INTERVAL_MS` 2000
 - `KNOCKOUT_KEEP` 3 rows, after starter clothes
 - `MAX_HP` 100
@@ -127,7 +127,7 @@ Weights are the full table. A living spot rolls one ore the player has unlocked 
 ### 6b. Floor tiles
 The way up is `(1, 7)`. The way down is `(18, 7)` on floors 1–9. Floor 10 has no way down. Entering the floor sets `pos_x, pos_y` to the way up.
 
-Floors 1–2 have no Rattler. Floors 3–10 roll one Rattler tile when that floor's spots are first created, store it, and do not roll again. The tile is any floor tile except a rock, the way up, and the way down, and it is farther than `MONSTER_REACH` from the way up. It does not move.
+Every floor rolls its Rattler tiles when that floor's spots are first created, stores them, and does not roll again. Floors 1–4 roll 1, floors 5–8 roll 2, floors 9–10 roll 3. Each tile is any floor tile except a rock, the way up, the way down, and another Rattler, and it is farther than `MONSTER_REACH` from the way up. They do not move. A hit deals `5 + floor number` HP. A player inside more than one reach is still hit once per interval.
 
 Floors 1–2:
 
@@ -292,7 +292,7 @@ Resolves a pending swing whose `swing_ends_at` has passed, then returns the stat
 
 Each spot returns index, `x`, `y`, ore or empty, name, swings done, swings needed, swings left, stamina cost, swing seconds, unlocked, `respawn_at`, `progress`, and `progress_target`. With `N` swings needed and `d` swings already finished, a resting rock has `progress` and `progress_target` at `d / N`. During a swing they move from `d / N` toward `(d + 1) / N`, and `progress_target` is that end. An empty spot is bare ground: the client draws no name and no countdown. The spot list is the table for the player's current floor.
 
-On a mine floor the state also returns `pos_x`, `pos_y`, and the Rattler when that floor has one: name, `x`, `y`, reach, hit damage, and hit interval. Elsewhere `pos_x` and `pos_y` are null and there is no monster. HP is the stored value, not a constant 100.
+On a mine floor the state also returns `pos_x`, `pos_y`, and the floor's Rattlers: each has `x`, `y`, reach, and the floor's hit damage. Elsewhere `pos_x` and `pos_y` are null and there are no Rattlers. HP is the stored value, not a constant 100.
 
 ### `list_mine_levels(player_id)`
 For each floor: level number, entry requirement, whether it is locked, and each ore with weight, unlocked flag, required Mining Level, required pickaxe tier, and the stamina cost for the player's current pickaxe. The UI builds lock hints from these fields (`STYLE_GUIDE.md`).
@@ -309,7 +309,7 @@ Requires `current_location` of `mine_N`. `x` and `y` are integers inside the flo
 ### `tick(player_id, elapsed_ms)`
 Adds `elapsed_ms` to `step_credit_ms` and caps that credit at `WALK_MS_PER_TILE`.
 
-If the player is on a floor with a Rattler and the Euclidean distance from `(pos_x, pos_y)` to the monster is ≤ `MONSTER_REACH`, add `elapsed_ms` to `attack_bank_ms`. Every `MONSTER_HIT_INTERVAL_MS` in that bank deals `MONSTER_HIT_DAMAGE` and subtracts that interval. Outside the reach, or on a floor with no monster, set `attack_bank_ms` to 0. Clients do not edit HP themselves.
+If the player is within `MONSTER_REACH` of any Rattler on this floor, add `elapsed_ms` to `attack_bank_ms`. Every `MONSTER_HIT_INTERVAL_MS` in that bank deals `5 + floor number` and subtracts that interval. Being inside two reaches does not deal a second hit. Outside every reach, set `attack_bank_ms` to 0. Clients do not edit HP themselves.
 
 If HP falls to 0 or below, this call knocks the player out and does not resolve a pending swing:
 - Set HP to `MAX_HP` and location to `mining_quarter`.
