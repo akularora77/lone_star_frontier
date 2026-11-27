@@ -5,7 +5,7 @@ GitHub `main` is the single source of truth for specs, schema, evals, and code. 
 
 1. **GitHub (`main`):** Specs and versioning. Shared specs (`PRD.md`, `SCHEMA.md`, `EVALS.md`, `STYLE_GUIDE.md`, `CONTEXT.md`, `AGENTS.md`) change here.
 2. **Lovable (frontend):** Connects GitHub from its project settings. That creates a private repo and two-way syncs the app with that repo only. Lovable does not push to `akularora77/lone_star_frontier`. It reads **Recent changes** in `PRD.md` when that file is shown to it. It does not edit spec files.
-3. **Replit (backend & evals):** Pulls `main`. Owns `evals/`, `server/`, and backend logic. Gemini API, Supabase PostgreSQL, deterministic game rules, and the Python eval harness.
+3. **Replit (backend & evals):** Pulls `main`. Owns `evals/`, `server/`, and backend logic. Gemini API, Replit PostgreSQL, deterministic game rules, and the Python eval harness.
 
 ## Who Edits Specs
 Lovable and Replit should propose spec changes in plain language when they hit a blocker. They do not edit the spec files themselves.
@@ -25,13 +25,13 @@ In this repo, small clarifications can be applied locally and pushed in batches.
 - A later `httpService.ts` calls the Replit API through a base URL setting. Components depend on `GameService` only. A setting chooses the implementation.
 - The reducer stores the latest service snapshot. Timers call `tick`. Components do not add or subtract gold, XP, stamina, or rapport.
 - The mock keeps the player in memory. `localStorage` is not the player record.
-- No Lovable Cloud. No Supabase client in `src/`. The browser reaches the database only through Replit.
+- No Lovable Cloud. No database client in `src/`. The browser reaches Replit PostgreSQL only through Replit.
 - Fonts and the page title are set from the root head inside `src/`.
 - Mock tests live next to the mock under `src/`. They cover the price band, locked floors, the ore filter, stamina, trades, inventory-full, quote expiry, the rapport clamp, unstacked ore, cancelling a swing by walking, Rattlers that roam, Rattler hits, and knockout. They do not replace the later harness in `evals/`.
 
 ## File Ownership
 - **Lovable:** `src/` only, including colocated mock tests, `src/styles.css`, and `src/PROTOTYPE_DRIFT.md`.
-- **Replit:** `server/`, `evals/`, Supabase, and the Gemini API.
+- **Replit:** `server/`, `evals/`, Replit PostgreSQL, and the Gemini API.
 - **`main` specs:** `PRD.md`, `SCHEMA.md`, `EVALS.md`, `STYLE_GUIDE.md`, `CONTEXT.md`, `AGENTS.md`.
 
 Game rules, on either side, go through the contracts in `SCHEMA.md`. TanStack server functions are not a second game backend.

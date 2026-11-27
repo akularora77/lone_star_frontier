@@ -26,7 +26,7 @@ v2.0 implementation contract. Product rules are in `PRD.md`. If a number below a
 
 Gold, prices, XP, stamina, and rapport are integers. A fractional price rounds to the nearest integer, then clamps into the integer band `[round(base * 0.7), round(base * 1.3)]`.
 
-## Database Schema (Supabase PostgreSQL)
+## Database Schema (Replit PostgreSQL)
 
 ### 1. `players`
 - `id`: UUID (PK)

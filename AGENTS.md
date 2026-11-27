@@ -11,10 +11,10 @@
 - Components import `GameService`. They do not import `mockService` or `httpService`, and they do not compute prices, drops, XP, stamina, hit points, knockout, locks, or rapport.
 - `tick` restores stamina, credits the next walk step, and applies Rattler hits. There is no run mode. A second mine click before `swing_ends_at` is refused. Walking to a new tile cancels the swing and grants nothing. A component timer calls `tick` and stores the snapshot. The client calls `set_position` once per tile.
 - Seed data matches the catalog, XP table, floor table, and ore weights in `SCHEMA.md`.
-- No Lovable Cloud. No Supabase client. No game rules in TanStack server functions.
+- No Lovable Cloud. No database client in the browser. No game rules in TanStack server functions.
 
 ## Replit (backend)
-- Edit `server/` and `evals/`. Implement the same contracts. Supabase is the store.
+- Edit `server/` and `evals/`. Implement the same contracts. Replit PostgreSQL is the store.
 - Clamp prices to the band and rapport deltas to −5…+5 even when the model suggests otherwise.
 - Townspeople may mention the Rattler. They stay out of the backlog: no fighting back, bounties, horses, or other towns.
 

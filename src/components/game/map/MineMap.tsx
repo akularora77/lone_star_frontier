@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGame } from "@/game/GameProvider";
@@ -15,26 +15,6 @@ import { useWalker, type Pt } from "./useWalker";
 /** Map units per floor tile (drawing scale only). */
 const T = 50;
 const center = (t: TilePos): Pt => ({ x: t.x * T + T / 2, y: t.y * T + T / 2 });
-
-function OreMeter({ rock, progress, target, endsAt }: { rock: Pt; progress: number; target: number; endsAt: number }) {
-  const [displayed, setDisplayed] = useState(progress);
-  useEffect(() => {
-    const started = Date.now();
-    const duration = Math.max(1, endsAt - started);
-    let frame = 0;
-    const paint = () => {
-      const fraction = Math.max(0, Math.min(1, (Date.now() - started) / duration));
-      setDisplayed(progress + (target - progress) * fraction);
-      if (endsAt > Date.now()) frame = requestAnimationFrame(paint);
-    };
-    paint();
-    return () => cancelAnimationFrame(frame);
-  }, [endsAt, progress, target]);
-  return <g pointerEvents="none" role="progressbar" aria-label="Ore mining progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(displayed * 100)}>
-    <rect x={rock.x - 24} y={rock.y + 20} width="48" height="6" rx="2" fill="var(--wood-dark)" />
-    <rect x={rock.x - 24} y={rock.y + 20} width={displayed * 48} height="6" rx="2" fill="var(--dusty-gold)" />
-  </g>;
-}
 
 export function MineMap({ level }: { level: MineLevelInfo }) {
   const { player, levels, swing, move, step } = useGame();
@@ -193,7 +173,6 @@ export function MineMap({ level }: { level: MineLevelInfo }) {
                   <path className={isSwinging ? "svg-shake" : undefined} d={`M${r.x - 24} ${r.y + 14} Q${r.x - 27} ${r.y - 12} ${r.x - 5} ${r.y - 20} Q${r.x + 20} ${r.y - 22} ${r.x + 26} ${r.y + 2} Q${r.x + 27} ${r.y + 16} ${r.x + 6} ${r.y + 18} Z`} fill="var(--wood)" stroke="var(--wood-dark)" strokeWidth="3" />
                   <foreignObject x={r.x - 10} y={r.y - 11} width="20" height="20" pointerEvents="none"><div className="grid size-full place-items-center"><OreGem oreId={spot.ore_id} className="size-3.5" /></div></foreignObject>
                 </> : <ellipse cx={r.x} cy={r.y + 8} rx="18" ry="6" fill="var(--ink)" opacity="0.6" pointerEvents="none" />}
-                {isSwinging && <OreMeter key={player?.swing_ends_at ?? 0} rock={r} progress={spot.progress} target={spot.progress_target} endsAt={player?.swing_ends_at ?? 0} />}
               </g>
             );
           })}
