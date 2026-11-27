@@ -14,7 +14,7 @@ export function ItemDetails({ item }: { item: InventoryRow }) {
     if (item.swing_seconds !== undefined) stats.push(["Swing duration", `${item.swing_seconds}s`]);
   }
   return <div className="space-y-2">
-    <p className="font-display text-base font-bold">{item.name}{item.type === "ore" && ` × ${item.quantity}`}</p>
+    <p className="font-display text-base font-bold">{item.name}</p>
     <p className="text-sm opacity-80">{item.description}</p>
     <dl className="space-y-1 text-sm tabular-nums">
       {stats.map(([label, value]) => <div key={label} className="flex justify-between gap-3"><dt>{label}</dt><dd className="font-semibold">{value}</dd></div>)}

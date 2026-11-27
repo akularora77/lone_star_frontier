@@ -47,6 +47,7 @@ export function DialogueHud() {
   const rapport = player.rapport.find((r) => r.npc_id === npc.id)?.rapport_score ?? 50;
   const isStore = npc.id === "store_manager";
   const sel = player.inventory.find((i) => i.id === selectedItemId && i.type === "ore");
+  const selCount = sel ? player.inventory.filter((i) => i.id === sel.id).length : 0;
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -92,8 +93,8 @@ export function DialogueHud() {
         {isStore && (
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="inline-flex items-center gap-1 opacity-90"><Handshake className="size-4" /> Trade: quote gear from the shelf, or</span>
-            <button type="button" disabled={!sel} onClick={() => sel && void requestQuote(sel.id, "sell", sel.quantity)} className="rounded-sm border border-dusty-gold px-2 py-0.5 text-dusty-gold enabled:hover:bg-dusty-gold enabled:hover:text-wood-dark disabled:opacity-40">
-              {sel ? `Sell all ${sel.name} (${sel.quantity})` : "Select ore to sell all"}
+            <button type="button" disabled={!sel} onClick={() => sel && void requestQuote(sel.id, "sell", selCount)} className="rounded-sm border border-dusty-gold px-2 py-0.5 text-dusty-gold enabled:hover:bg-dusty-gold enabled:hover:text-wood-dark disabled:opacity-40">
+              {sel ? `Sell all ${sel.name} (${selCount})` : "Select ore to sell all"}
             </button>
           </div>
         )}

@@ -15,3 +15,4 @@ export const MINE_NAME = "The Mine";
 export const BARTENDER_NAME = "Bartender";
 export const PROSPECTOR_NAME = "Old Prospector";
 export const MASTERY_BADGE_NAME = "Mine Master Badge";
+export const RATTLER_NAME = "Rattler";

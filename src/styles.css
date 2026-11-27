@@ -112,6 +112,8 @@
   --ore-gold: oklch(0.8 0.15 85);
   --ore-mithril: oklch(0.72 0.12 230);
   --rock: oklch(0.42 0.025 50);
+  --rattler: oklch(0.68 0.09 75);
+  --rattler-dark: oklch(0.35 0.05 50);
   --character-skin: oklch(0.78 0.06 60);
   --character-shirt: oklch(0.74 0.035 150);
   --character-trousers: oklch(0.44 0.06 250);
@@ -203,3 +205,16 @@
 @keyframes pulse-ring { 0% { r: 6; opacity: 0.9; } 100% { r: 26; opacity: 0; } }
 @utility animate-click-ring { animation: pulse-ring 0.6s ease-out forwards; }
 @utility map-label { paint-order: stroke; stroke: var(--wood-dark); stroke-width: 4px; stroke-linejoin: round; }
+
+.rattler-roam { transition: transform 1.2s linear; }
+@keyframes rattler-strike {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  18% { transform: translateY(5px) scaleY(0.85); }
+  38% { transform: translateY(-28px) scaleY(1.45); }
+  58% { transform: translateY(-20px) scaleY(1.25); }
+}
+.rattler-strike { animation: rattler-strike 0.55s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .rattler-roam { transition: none; }
+  .rattler-strike { animation: none; }
+}

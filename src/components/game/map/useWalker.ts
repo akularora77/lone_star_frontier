@@ -57,5 +57,6 @@ export function useWalker(initial: Pt) {
   }, [stop]);
 
   useEffect(() => stop, [stop]);
-  return { pos, moving, facing, walkTo, place, face: setFacing };
+  const current = useCallback(() => posRef.current, []);
+  return { pos, moving, facing, walkTo, place, face: setFacing, current };
 }

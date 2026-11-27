@@ -18,7 +18,9 @@ interface GameContextValue {
   selectedItemId: string | null;
   busy: boolean;
   move(loc: Location): Promise<void>;
-  swing(floor: number, spot: number): Promise<MineResult | null>;
+  swing(floor: number, spot: number, isCancelled?: () => boolean): Promise<MineResult | null>;
+  /** One tile through set_position; ticks first so walk credit is current. Resolves false if refused. */
+  step(x: number, y: number): Promise<boolean>;
   equip(itemId: string): Promise<void>;
   unequip(itemId: string): Promise<void>;
   select(itemId: string | null): void;
@@ -84,19 +86,29 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return () => { cancelled = true; };
   }, [refreshLists]);
 
-  // Stamina only changes through tick (SCHEMA.md).
+  // Stamina, walk credit, Rattler hits and knockout only change through tick (SCHEMA.md).
+  const lastTick = useRef(Date.now());
+  const lastLocation = useRef<Location | null>(null);
+  const tickNow = useCallback(async () => {
+    const s = svcRef.current;
+    if (!s) return null;
+    const t = Date.now();
+    const elapsed = t - lastTick.current;
+    lastTick.current = t;
+    const st = await s.tick(elapsed);
+    const was = lastLocation.current;
+    if (was?.startsWith("mine_") && st.current_location === "mining_quarter") {
+      toast.error("The Rattler knocked you out. You came to at the mine entrance with only your clothes and your 3 most valuable items.", { duration: 7000 });
+      void refreshLists();
+    }
+    setPlayer(st);
+    return st;
+  }, [refreshLists]);
+  useEffect(() => { lastLocation.current = player?.current_location ?? null; }, [player?.current_location]);
   useEffect(() => {
-    let last = Date.now();
-    const id = window.setInterval(() => {
-      const s = svcRef.current;
-      if (!s) return;
-      const t = Date.now();
-      const elapsed = t - last;
-      last = t;
-      void s.tick(elapsed).then(setPlayer);
-    }, 1000);
+    const id = window.setInterval(() => { void tickNow(); }, 1000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [tickNow]);
 
   const value: GameContextValue = {
     player, levels, store, dialogue, quote, selectedItemId, busy,
@@ -107,8 +119,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
         if (dialogue && NPCS.find((n) => n.id === dialogue.npcId)?.location !== loc) setDialogue(null);
       }
     },
-    async swing(floor, spot) {
-      const r = await run((s) => mineRockToCompletion(s, floor, spot, setPlayer));
+    async step(x, y) {
+      const s = svcRef.current;
+      if (!s) return false;
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const st = await tickNow();
+        if (!st?.position) return false;
+        try { setPlayer(await s.set_position(x, y)); return true; }
+        catch (e) {
+          if (!isGameError(e) || e.code !== "BAD_POSITION") { toast.error(isGameError(e) ? e.message : "Something went wrong."); return false; }
+          await new Promise((resolve) => setTimeout(resolve, 60));
+        }
+      }
+      return false;
+    },
+    async swing(floor, spot, isCancelled) {
+      const r = await run((s) => mineRockToCompletion(s, floor, spot, setPlayer, undefined, isCancelled));
       if (r) {
         const st = await run((s) => s.get_player_state());
         if (st) {

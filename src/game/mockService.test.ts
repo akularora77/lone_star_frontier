@@ -7,6 +7,15 @@ import { levelForXp } from "./mockService";
 
 const fixed = (v: number) => () => v;
 
+type Svc = ReturnType<typeof createMockService>;
+/** Stand on the rock's tile (allowed by SCHEMA.md), then swing. */
+async function mine(s: Svc, floor: number, spot: number) {
+  const rock = (await s.get_player_state()).rock_spots.find((r) => r.index === spot);
+  if (rock) s._debug.setPosition(rock.x, rock.y);
+  return s.mine_ore(floor, spot);
+}
+const countOf = (st: { inventory: { id: string }[] }, id: string) => st.inventory.filter((r) => r.id === id).length;
+
 async function code(p: Promise<unknown>) {
   try { await p; return null; } catch (e) { return (e as GameError).code; }
 }
@@ -60,7 +69,7 @@ describe("floors and persistent mining", () => {
     await s.move("mine_1");
     expect((await s.get_player_state()).rock_spots[0]?.progress).toBe(0);
     for (let i = 0; i < 3; i++) {
-      await s.mine_ore(1, 1);
+      await mine(s, 1, 1);
       expect((await s.get_player_state()).rock_spots[0]?.progress_target).toBeCloseTo((i + 1) / 3);
       expect((await advance(1000)).rock_spots[0]?.progress).toBeCloseTo((i + 0.5) / 3);
       expect((await advance(1000)).rock_spots[0]?.progress).toBeCloseTo((i + 1) / 3);
@@ -72,7 +81,7 @@ describe("floors and persistent mining", () => {
     const catalog = CATALOG.map((item) => item.id === "ore_copper" ? { ...item, xp_per_mine: 77, swing_seconds: 0.25, base_swings: 1, respawn_seconds: 3 } : item);
     const s = createMockService({ catalog, rng: fixed(0), now: () => now });
     await s.move("mine_1");
-    const result = await s.mine_ore(1, 1);
+    const result = await mine(s, 1, 1);
     expect(result.swing_ends_at).toBe(250);
     expect(result.respawn_at).toBe(3250);
     now = 249;
@@ -91,19 +100,20 @@ describe("floors and persistent mining", () => {
     expect(await code(s.mine_ore(1, 1))).toBe("WRONG_LOCATION");
     expect((await s.get_player_state()).current_location).toBe("saloon");
   });
-  it("creates exactly 3 spots using only unlocked ores", async () => {
+  it("uses the SCHEMA floor layouts (8 / 10 / 8 rocks) with only unlocked ores", async () => {
     const s = createMockService({ rng: fixed(0.99) });
     s._debug.setXp(1330);
+    expect((await s.move("mine_1")).rock_spots.map((r) => [r.x, r.y])).toEqual([[4, 3], [8, 2], [12, 3], [5, 6], [4, 11], [8, 12], [12, 11], [15, 7]]);
+    expect((await s.move("mine_3")).rock_spots).toHaveLength(10);
     const state = await s.move("mine_5");
-    expect(state.rock_spots).toHaveLength(3);
-    expect(state.rock_spots.map((r) => r.index)).toEqual([1, 2, 3]);
+    expect(state.rock_spots.map((r) => [r.x, r.y])).toEqual([[4, 3], [8, 2], [4, 11], [8, 12], [16, 3], [11, 7], [17, 4], [17, 10]]);
     expect(state.rock_spots.every((r) => r.ore_id === "ore_copper")).toBe(true);
   });
   it("takes 3 two-second copper swings, awards only on completion, then stays empty for 10s", async () => {
     const { service: s, advance } = clocked();
     await s.move("mine_1");
     for (let i = 1; i <= 3; i++) {
-      const result = await s.mine_ore(1, 1);
+      const result = await mine(s, 1, 1);
       expect(result.swings_done).toBe(i);
       expect(result.swings_needed).toBe(3);
       expect(result.quantity).toBe(i === 3 ? 1 : 0);
@@ -114,8 +124,8 @@ describe("floors and persistent mining", () => {
       expect(landed.experience_xp).toBe(i === 3 ? 10 : 0);
       expect(landed.rock_spots[0]?.swings_left).toBe(i === 3 ? 0 : 3 - i);
     }
-    expect((await s.get_player_state()).inventory.find((i) => i.id === "ore_copper")?.quantity).toBe(1);
-    expect(await code(s.mine_ore(1, 1))).toBe("ROCK_DEPLETED");
+    expect(countOf(await s.get_player_state(), "ore_copper")).toBe(1);
+    expect(await code(mine(s, 1, 1))).toBe("ROCK_DEPLETED");
     expect((await advance(9999)).rock_spots[0]?.ore_id).toBeNull();
     expect((await advance(1)).rock_spots[0]?.ore_id).toBe("ore_copper");
     expect((await s.get_player_state()).rock_spots[0]?.swings_left).toBe(3);
@@ -134,7 +144,7 @@ describe("floors and persistent mining", () => {
     expect(st.rock_spots[0]?.swings_needed).toBe(count);
     for (let i = 0; i < count; i++) {
       s._debug.setStamina(100);
-      const r = await s.mine_ore(floor, 1);
+      const r = await mine(s, floor, 1);
       expect(r.stamina_spent).toBe(cost);
       expect(r.xp_gained).toBe(i === count - 1 ? reward : 0);
       expect(r.swing_ends_at).toBe((i + 1) * seconds * 1000);
@@ -146,15 +156,15 @@ describe("floors and persistent mining", () => {
   });
   it("ignores extra swings without spending stamina or changing a different rock", async () => {
     const { service: s } = clocked();
-    await s.move("mine_1"); await s.mine_ore(1, 1);
+    await s.move("mine_1"); await mine(s, 1, 1);
     const before = await s.get_player_state();
-    expect(await code(s.mine_ore(1, 2))).toBe("SWING_IN_PROGRESS");
+    expect(await code(s.mine_ore(1, 1))).toBe("SWING_IN_PROGRESS");
     expect(await s.get_player_state()).toEqual(before);
   });
   it("keeps depleted spots and partial swings when leaving and returning", async () => {
     const { service: s, advance } = clocked();
     s._debug.setXp(250); // copper needs one swing at Mining 3
-    await s.move("mine_1"); await s.mine_ore(1, 1); await advance(2000);
+    await s.move("mine_1"); await mine(s, 1, 1); await advance(2000);
     await s.move("mining_quarter");
     expect((await s.move("mine_1")).rock_spots[0]?.ore_id).toBeNull();
     await advance(10000);
@@ -183,7 +193,7 @@ describe("floors and persistent mining", () => {
     expect((await s.get_player_state()).rock_spots[0]?.stamina_cost).toBe(4); // ceil(4 * .8)
   });
   it("spends no stamina or progress when stamina is insufficient", async () => {
-    const s = createMockService(); await s.move("mine_1"); s._debug.setStamina(5);
+    const s = createMockService(); await s.move("mine_1"); s._debug.setStamina(5); s._debug.setPosition(4, 3);
     const before = await s.get_player_state();
     expect(await code(s.mine_ore(1, 1))).toBe("NOT_ENOUGH_STAMINA");
     expect(await s.get_player_state()).toEqual(before);
@@ -192,13 +202,13 @@ describe("floors and persistent mining", () => {
     const { service: s, advance } = clocked();
     s._debug.setXp(250); s._debug.addItem("cloth_vest", 1); await s.equip_item("cloth_vest");
     await s.move("mine_1");
-    const r = await s.mine_ore(1, 1);
+    const r = await mine(s, 1, 1);
     expect(r.quantity).toBe(2); expect(r.xp_gained).toBe(20);
     expect((await advance(2000)).experience_xp).toBe(270);
   });
   it("awards the permanent badge when total XP reaches 18055", async () => {
     const { service: s, advance } = clocked();
-    s._debug.setXp(18045); await s.move("mine_1"); await s.mine_ore(1, 1);
+    s._debug.setXp(18045); await s.move("mine_1"); await mine(s, 1, 1);
     const landed = await advance(2000);
     expect(landed.experience_xp).toBe(18055); expect(landed.mining_level).toBe(10);
     expect(landed.mastery_badge_earned).toBe(true); expect(landed.xp_for_next_level).toBeNull();
@@ -224,7 +234,7 @@ describe("stamina tick", () => {
 });
 
 describe("trading", () => {
-  it("halves capacity to 14 and enforces it for both gear purchases and new ore stacks", async () => {
+  it("halves capacity to 14 and enforces it for both gear purchases and new ore", async () => {
     const s = createMockService();
     expect(INVENTORY_SLOTS).toBe(14);
     expect((await s.get_player_state()).inventory_capacity).toBe(14);
@@ -235,17 +245,26 @@ describe("trading", () => {
     expect(await code(s.execute_trade(q.quote_id))).toBe("INVENTORY_FULL");
     s._debug.setXp(250);
     await s.move("mine_1");
-    expect(await code(s.mine_ore(1, 1))).toBe("INVENTORY_FULL");
+    expect(await code(mine(s, 1, 1))).toBe("INVENTORY_FULL");
     expect((await s.get_player_state()).inventory).toHaveLength(14);
   });
-  it("allows existing ore stacks to grow within a full 14-slot inventory", async () => {
+  it("never stacks ore: each mined ore takes its own slot, so a full bag ends the trip", async () => {
     const { service: s, advance } = clocked();
-    for (const item of CATALOG.filter((row) => !["pick_rusty", "basic_top", "basic_bottom", "basic_hat", "ore_iron", "cloth_duster"].includes(row.id))) s._debug.addItem(item.id, 1);
-    expect((await s.get_player_state()).inventory).toHaveLength(14);
-    s._debug.setXp(250); await s.move("mine_1"); await s.mine_ore(1, 1);
-    const state = await advance(2000);
-    expect(state.inventory).toHaveLength(14);
-    expect(state.inventory.find((row) => row.id === "ore_copper")?.quantity).toBe(2);
+    s._debug.setXp(250); s._debug.addItem("ore_copper", 9); // 4 starter rows + 9 = 13 of 14
+    await s.move("mine_1"); await mine(s, 1, 1);
+    const st = await advance(2000);
+    expect(st.inventory).toHaveLength(14);
+    expect(countOf(st, "ore_copper")).toBe(10);
+    expect(st.inventory.filter((r) => r.id === "ore_copper").every((r) => r.quantity === 1)).toBe(true);
+    expect(await code(mine(s, 1, 2))).toBe("INVENTORY_FULL");
+  });
+  it("only rolls the bonus ore when a second slot is free", async () => {
+    const { service: s, advance } = clocked();
+    s._debug.setXp(250); s._debug.addItem("cloth_vest", 1); await s.equip_item("cloth_vest");
+    s._debug.addItem("ore_copper", 8); // 13 of 14 used
+    await s.move("mine_1");
+    expect((await mine(s, 1, 1)).quantity).toBe(1);
+    expect((await advance(2000)).inventory).toHaveLength(14);
   });
   it.each([["basic_top", "top"], ["basic_bottom", "bottom"], ["basic_hat", "hat"]] as const)("removes and re-equips %s without deleting it from inventory", async (id, slot) => {
     const s = createMockService();
@@ -336,5 +355,167 @@ describe("rapport", () => {
     const bad = await s.talk_to_npc("saloon_bartender", "you idiot, I insult you");
     expect(bad.rapport_delta).toBeLessThan(0);
     expect(bad.rapport_delta).toBeGreaterThanOrEqual(-5);
+  });
+});
+
+describe("v2.0 position, Rattler and knockout", () => {
+  it("enters at the way up and walks one tile per 400ms of ticked credit", async () => {
+    const s = createMockService();
+    expect((await s.move("mine_1")).position).toEqual({ x: 1, y: 7 });
+    expect(await code(s.set_position(2, 7))).toBe("BAD_POSITION"); // no credit yet
+    await s.tick(399);
+    expect(await code(s.set_position(2, 7))).toBe("BAD_POSITION");
+    await s.tick(5000); // credit caps at one tile
+    expect((await s.set_position(2, 7)).position).toEqual({ x: 2, y: 7 });
+    expect(await code(s.set_position(3, 7))).toBe("BAD_POSITION");
+    await s.tick(400);
+    expect(await code(s.set_position(4, 7))).toBe("BAD_POSITION"); // skips a tile
+    expect(await code(s.set_position(-1, 7))).toBe("BAD_POSITION");
+    expect((await s.set_position(3, 8)).position).toEqual({ x: 3, y: 8 });
+  });
+  it("needs the player beside the rock to swing", async () => {
+    const s = createMockService({ rng: fixed(0) });
+    await s.move("mine_1");
+    expect(await code(s.mine_ore(1, 1))).toBe("WRONG_LOCATION");
+    s._debug.setPosition(5, 4); // diagonal neighbour of (4, 3)
+    expect((await s.mine_ore(1, 1)).swings_done).toBe(1);
+  });
+  it("walking away mid-swing grants nothing and keeps the stamina spent", async () => {
+    const { service: s, advance } = clocked();
+    s._debug.setXp(250); // copper breaks in one swing
+    await s.move("mine_1"); s._debug.setPosition(5, 4);
+    await s.mine_ore(1, 1);
+    const spent = (await s.get_player_state()).stamina;
+    await s.tick(400);
+    const left = await s.set_position(6, 5);
+    expect(left.swing_ends_at).toBeNull();
+    const later = await advance(5000);
+    expect(later.experience_xp).toBe(250);
+    expect(countOf(later, "ore_copper")).toBe(0);
+    expect(later.rock_spots[0]?.ore_id).toBe("ore_copper");
+    expect(later.stamina).toBe(spent);
+  });
+  it.each([[1, 1], [2, 1], [3, 1], [4, 1], [5, 2], [6, 2], [7, 2], [8, 2], [9, 3], [10, 3]])("floor %i has %i distinct, safely placed, persistent Rattlers", async (floor, expected) => {
+    const s = createMockService({ rng: fixed(0.5) });
+    s._debug.setXp(18055);
+    const state = await s.move(`mine_${floor}`);
+    const first = state.floor?.rattlers ?? [];
+    expect(first).toHaveLength(expected);
+    expect(new Set(first.map((t) => `${t.x},${t.y}`)).size).toBe(expected);
+    for (const tile of first) {
+      expect(state.rock_spots.some((r) => r.x === tile.x && r.y === tile.y)).toBe(false);
+      expect(Math.hypot(tile.x - 1, tile.y - 7)).toBeGreaterThan(3);
+      expect([tile.x, tile.y]).not.toEqual([18, 7]);
+    }
+    await s.move("mining_quarter");
+    expect((await s.move(`mine_${floor}`)).floor?.rattlers).toEqual(first);
+  });
+  it.each([[1, 6], [2, 7], [3, 8], [4, 9], [5, 10], [6, 11], [7, 12], [8, 13], [9, 14], [10, 15]])("floor %i deals %i HP per 1-second interval", async (floor, damage) => {
+    const s = createMockService();
+    s._debug.setXp(18055);
+    const state = await s.move(`mine_${floor}`);
+    expect(state.floor?.hit_damage).toBe(damage);
+    s._debug.setRattler(floor, { x: 10, y: 7 });
+    s._debug.setPosition(11, 7);
+    expect((await s.tick(999)).health_hp).toBe(100);
+    expect((await s.tick(1)).health_hp).toBe(100 - damage);
+    expect((await s.tick(1000)).health_hp).toBe(100 - damage * 2);
+    s._debug.setPosition(19, 13);
+    expect((await s.tick(1000)).health_hp).toBe(100 - damage * 2);
+    const snake = (await s.get_player_state()).floor?.rattlers[0];
+    if (!snake) throw new Error("Missing Rattler");
+    s._debug.setPosition(snake.x, snake.y + 1);
+    expect((await s.tick(999)).health_hp).toBe(100 - damage * 2);
+    expect((await s.tick(1)).health_hp).toBe(100 - damage * 3);
+  });
+  it("overlapping Rattler reaches hit only once per interval", async () => {
+    const s = createMockService();
+    s._debug.setXp(18055);
+    await s.move("mine_9");
+    s._debug.setRattlers(9, [{ x: 10, y: 7 }, { x: 12, y: 7 }, { x: 11, y: 9 }]);
+    s._debug.setPosition(11, 7);
+    expect((await s.tick(1000)).health_hp).toBe(86);
+    expect((await s.tick(1000)).health_hp).toBe(72);
+  });
+  it("a hit does not stop a swing", async () => {
+    const { service: s, advance } = clocked();
+    s._debug.setXp(250);
+    await s.move("mine_3"); s._debug.setRattler(3, { x: 7, y: 3 });
+    s._debug.setPosition(5, 3); // beside rock 1 and within reach
+    await s.mine_ore(3, 1);
+    expect((await s.tick(1000)).health_hp).toBe(92);
+    const done = await advance(3000);
+    expect(done.swing_ends_at).toBeNull();
+    expect(done.experience_xp).toBeGreaterThan(250);
+  });
+  it("knockout: back to the mine entrance at full HP with starter clothes and the 3 most valuable other rows", async () => {
+    const s = createMockService();
+    s._debug.setXp(250); s._debug.setGold(321);
+    for (const id of ["pick_iron", "cloth_vest", "cloth_bandana"]) s._debug.addItem(id, 1);
+    s._debug.addItem("ore_copper", 3);
+    await s.equip_item("pick_iron");
+    await s.move("mine_3"); s._debug.setRattler(3, { x: 10, y: 7 }); s._debug.setPosition(10, 8);
+    s._debug.setHp(8);
+    const out = await s.tick(1000);
+    expect(out.current_location).toBe("mining_quarter");
+    expect(out.health_hp).toBe(100);
+    expect(out.position).toBeNull();
+    expect(out.gold).toBe(321); expect(out.experience_xp).toBe(250);
+    expect(out.inventory.map((r) => r.id).sort()).toEqual(["basic_bottom", "basic_hat", "basic_top", "cloth_bandana", "cloth_vest", "pick_iron"].sort());
+    expect(out.equipped_pickaxe?.id).toBe("pick_iron");
+  });
+  it("knockout unequips a pickaxe that was not kept", async () => {
+    const s = createMockService();
+    s._debug.setXp(250);
+    for (const id of ["pick_iron", "cloth_vest", "cloth_duster"]) s._debug.addItem(id, 1);
+    await s.move("mine_3"); s._debug.setRattler(3, { x: 10, y: 7 }); s._debug.setPosition(10, 8); s._debug.setHp(8);
+    const out = await s.tick(1000);
+    expect(out.inventory.some((r) => r.id === "pick_rusty")).toBe(false);
+    expect(out.equipped_pickaxe).toBeNull();
+  });
+});
+
+
+describe("Rattler roaming", () => {
+  it("moves one neighboring tile after 2400ms, not on snapshot reads", async () => {
+    const s = createMockService({ rng: fixed(0) });
+    await s.move("mine_1");
+    s._debug.setRattler(1, { x: 5, y: 3 });
+    const initial = (await s.get_player_state()).floor?.rattlers[0];
+    expect((await s.tick(2399)).floor?.rattlers[0]).toEqual(initial);
+    expect((await s.get_player_state()).floor?.rattlers[0]).toEqual(initial);
+    const moved = (await s.tick(1)).floor?.rattlers[0];
+    expect(moved).toMatchObject({ x: 5, y: 2, id: 0 });
+  });
+  it("roams around ore without entering rocks, ladders, the player or another snake", async () => {
+    const s = createMockService({ rng: fixed(0.3) });
+    await s.move("mine_1");
+    s._debug.setRattlers(1, [{ x: 5, y: 3 }, { x: 6, y: 3 }]);
+    s._debug.setPosition(5, 2);
+    for (let i = 0; i < 20; i++) {
+      const st = await s.tick(2400);
+      if (!st.floor) throw new Error("Missing floor");
+      const tiles = st.floor.rattlers;
+      expect(new Set(tiles.map((t) => `${t.x},${t.y}`)).size).toBe(2);
+      for (const t of tiles) {
+        expect(t.x).toBeGreaterThanOrEqual(0);
+        expect(t.x).toBeLessThan(20);
+        expect(t.y).toBeGreaterThanOrEqual(0);
+        expect(t.y).toBeLessThan(14);
+        expect(st.rock_spots.some((r) => r.x === t.x && r.y === t.y)).toBe(false);
+        expect(t).not.toMatchObject({ x: 5, y: 2 });
+        expect(Math.hypot(t.x - 1, t.y - 7)).toBeGreaterThan(3);
+        expect(t).not.toMatchObject({ x: 18, y: 7 });
+      }
+    }
+  });
+  it("only the attacking snake publishes a new strike sequence", async () => {
+    const s = createMockService();
+    await s.move("mine_1");
+    s._debug.setRattlers(1, [{ x: 5, y: 3 }, { x: 16, y: 11 }]);
+    s._debug.setPosition(5, 4);
+    const st = await s.tick(1000);
+    expect(st.health_hp).toBe(94);
+    expect(st.floor?.rattlers.map((r) => r.strike_sequence)).toEqual([1, 0]);
   });
 });

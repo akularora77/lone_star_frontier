@@ -10,6 +10,7 @@ export interface GameService {
   list_store_items(): Promise<StoreItem[]>;
   move(location: Location): Promise<PlayerState>;
   tick(elapsed_ms: number): Promise<PlayerState>;
+  set_position(x: number, y: number): Promise<PlayerState>;
   mine_ore(mine_level: number, spot_index: number): Promise<MineResult>;
   equip_item(item_id: string): Promise<PlayerState>;
   unequip_item(item_id: string): Promise<PlayerState>;

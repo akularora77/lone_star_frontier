@@ -54,10 +54,10 @@ function InventoryGrid() {
           const cell = (
           <Button
             variant="ghost"
-            key={row?.id ?? `empty-${i}`}
+            key={row?.row_id ?? `empty-${i}`}
             type="button"
             disabled={!row}
-            aria-label={row ? `${row.name}${row.type === "ore" ? `, ${row.quantity}` : ""}${equipped(row.id) ? ", equipped" : ""}` : "Empty slot"}
+            aria-label={row ? `${row.name}${equipped(row.id) ? ", equipped" : ""}` : "Empty slot"}
             onClick={() => {
               if (!row) return;
               if (row.type === "clothing") {
@@ -75,11 +75,10 @@ function InventoryGrid() {
             )}
           >
             {row && (row.type === "ore" ? <span className="pointer-events-none absolute inset-[20%]"><ItemIcon id={row.id} type={row.type} tier={row.tier} className="block size-full" /></span> : <ItemIcon id={row.id} type={row.type} tier={row.tier} className="size-[90%]" />)}
-            {row?.type === "ore" && <span className="absolute left-1 top-0 text-xs font-bold text-dusty-gold tabular-nums">{row.quantity}</span>}
             {row && equipped(row.id) && <Check aria-hidden className="absolute bottom-1 right-1 size-3! text-dusty-gold" />}
           </Button>
           );
-          return row ? <Tooltip key={row.id}><TooltipTrigger asChild>{cell}</TooltipTrigger><TooltipContent side="left" className="w-64 max-w-[calc(100vw-2rem)] border border-wood bg-wood-dark p-3 text-parchment"><ItemDetails item={row} /></TooltipContent></Tooltip> : cell;
+          return row ? <Tooltip key={row.row_id}><TooltipTrigger asChild>{cell}</TooltipTrigger><TooltipContent side="left" className="w-64 max-w-[calc(100vw-2rem)] border border-wood bg-wood-dark p-3 text-parchment"><ItemDetails item={row} /></TooltipContent></Tooltip> : cell;
         })}
       </div></TooltipProvider>
       {selected && (
@@ -100,6 +99,7 @@ function BadgeGoldBar() {
   const { player, selectedItemId, requestQuote } = useGame();
   if (!player) return null;
   const sel = player.inventory.find((i) => i.id === selectedItemId && i.type === "ore");
+  const selCount = sel ? player.inventory.filter((i) => i.id === sel.id).length : 0;
   return (
     <section aria-label="Badge and gold" className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-t border-wood pt-3">
       <div className="grid size-14 place-items-center rounded-sm border border-wood bg-wood-dark/70" title={player.mastery_badge_earned ? MASTERY_BADGE_NAME : `${MASTERY_BADGE_NAME}: reach Mining Level 10`}>
@@ -113,10 +113,10 @@ function BadgeGoldBar() {
         <button
           type="button"
           disabled={!sel}
-          onClick={() => sel && void requestQuote(sel.id, "sell", sel.quantity)}
+          onClick={() => sel && void requestQuote(sel.id, "sell", selCount)}
           className="w-full truncate rounded-sm border border-dusty-gold px-2 py-1 text-sm font-semibold text-dusty-gold transition-colors enabled:hover:bg-dusty-gold enabled:hover:text-wood-dark disabled:opacity-40"
         >
-          {sel ? `Sell all ${sel.name}` : "Select ore to sell all"}
+          {sel ? `Sell all ${sel.name} (${selCount})` : "Select ore to sell all"}
         </button>
       </div>
     </section>

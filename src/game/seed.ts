@@ -25,7 +25,24 @@ export const CATALOG: CatalogItem[] = [
   { id: "basic_hat", name: "Basic Hat", type: "clothing", tier: 0, base_value: 0, description: "Your everyday hat. No mining bonuses.", stamina_modifier: 0, yield_modifier: 0 },
 ];
 
-export const MINE_FLOORS = [1, 1, 3, 3, 5, 5, 7, 7, 9, 9].map((required_mining_level, i) => ({ level_number: i + 1, required_mining_level }));
+export interface Tile { x: number; y: number }
+export const WAY_UP: Tile = { x: 1, y: 7 };
+export const WAY_DOWN: Tile = { x: 18, y: 7 };
+const tiles = (rows: [number, number][]): Tile[] => rows.map(([x, y]) => ({ x, y }));
+const SHALLOW = tiles([[4, 3], [8, 2], [12, 3], [5, 6], [4, 11], [8, 12], [12, 11], [15, 7]]);
+const MIDDLE = tiles([[4, 3], [8, 2], [5, 6], [4, 11], [8, 12], [12, 11], [16, 3], [16, 11], [11, 7], [17, 7]]);
+const DEEP = tiles([[4, 3], [8, 2], [4, 11], [8, 12], [16, 3], [11, 7], [17, 4], [17, 10]]);
+
+/** SCHEMA.md 6b: spot tiles, Rattler floors and the way down per floor. */
+export const MINE_FLOORS = [1, 1, 3, 3, 5, 5, 7, 7, 9, 9].map((required_mining_level, i) => {
+  const level_number = i + 1;
+  return {
+    level_number, required_mining_level,
+    spots: level_number <= 2 ? SHALLOW : level_number <= 4 ? MIDDLE : DEEP,
+    rattler_count: level_number <= 4 ? 1 : level_number <= 8 ? 2 : 3,
+    way_down: level_number < 10 ? WAY_DOWN : null,
+  };
+});
 
 const ORE_ORDER: OreId[] = ["ore_copper", "ore_iron", "ore_silver", "ore_gold", "ore_mithril"];
 const WEIGHT_ROWS: number[][] = [
@@ -44,4 +61,5 @@ export const NPCS: Npc[] = [
 ];
 
 export const STARTER_PICKAXE_ID = "pick_rusty";
+export const STARTER_CLOTHES = ["basic_top", "basic_bottom", "basic_hat"] as const;
 export const LOCATION_LABELS = { saloon: STARTING_SALOON_NAME, mining_quarter: MINING_QUARTER_NAME } as const;

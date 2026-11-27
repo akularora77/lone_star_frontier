@@ -10,6 +10,7 @@ describe("XP completion refresh", () => {
     let now = 0;
     const service = createMockService({ now: () => now, rng: () => 0 });
     await service.move("mine_1");
+    service._debug.setPosition(4, 3);
     for (let i = 0; i < 2; i++) { await service.mine_ore(1, 1); now += 2000; await service.get_player_state(); }
     await service.mine_ore(1, 1);
     now = 5999; // Browser timer wakes one millisecond before completion.

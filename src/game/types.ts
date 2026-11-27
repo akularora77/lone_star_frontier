@@ -32,7 +32,7 @@ export interface Npc {
 export type ErrorCode =
   | "SWING_IN_PROGRESS" | "ROCK_DEPLETED"
   | "LEVEL_LOCKED" | "NO_PICKAXE" | "NOT_ENOUGH_STAMINA" | "INVENTORY_FULL" | "INSUFFICIENT_GOLD"
-  | "INSUFFICIENT_ITEMS" | "QUOTE_EXPIRED" | "QUOTE_NOT_FOUND" | "INVALID_QUANTITY" | "INVALID_ACTION"
+  | "INSUFFICIENT_ITEMS" | "BAD_POSITION" | "QUOTE_EXPIRED" | "QUOTE_NOT_FOUND" | "INVALID_QUANTITY" | "INVALID_ACTION"
   | "ALREADY_OWNED" | "NOT_OWNED" | "UNKNOWN_NPC" | "WRONG_LOCATION" | "UNKNOWN_LOCATION";
 
 /** Shared error shape from SCHEMA.md. */
@@ -49,7 +49,11 @@ export function isGameError(e: unknown): e is GameError {
   return typeof e === "object" && e !== null && "code" in e && "message" in e;
 }
 
-export interface InventoryRow extends CatalogItem { quantity: number }
+/** Each row takes one slot; ore rows never stack (quantity is always 1). */
+export interface InventoryRow extends CatalogItem { row_id: number; quantity: number }
+export interface TilePos { x: number; y: number }
+export interface RattlerState extends TilePos { id?: number; strike_sequence?: number }
+export interface FloorInfo { width: number; height: number; way_up: TilePos; way_down: TilePos | null; rattlers: RattlerState[]; rattler_reach: number; hit_damage: number; walk_ms_per_tile: number }
 
 export interface PlayerState {
   id: string;
@@ -64,6 +68,9 @@ export interface PlayerState {
   max_stamina: number;
   swing_ends_at: number | null;
   rock_spots: RockSpot[];
+  /** Tile on the current mine floor; null outside the mine. */
+  position: TilePos | null;
+  floor: FloorInfo | null;
   gold: number;
   current_location: Location;
   equipped_pickaxe: { id: string; name: string; tier: number } | null;
@@ -85,7 +92,7 @@ export interface MineLevelInfo {
 export interface StoreItem { id: string; name: string; type: ItemType; tier: number; base_value: number; description: string; owned: boolean; mode: "sells" | "buys" }
 
 export interface RockSpot {
-  index: number; ore_id: OreId | null; name: string; swings_done: number; swings_needed: number;
+  index: number; x: number; y: number; ore_id: OreId | null; name: string; swings_done: number; swings_needed: number;
   swings_left: number; stamina_cost: number; swing_seconds: number; respawn_at: number | null;
   unlocked: boolean;
   progress: number; progress_target: number;
