@@ -18,7 +18,9 @@ v2.0 implementation contract. Product rules are in `PRD.md`. If a number below a
 - `WALK_MS_PER_TILE` 400
 - `MONSTER_REACH` 3 (Euclidean)
 - `MONSTER_HIT_DAMAGE` `5 + floor number`
-- `MONSTER_HIT_INTERVAL_MS` 2000
+- `MONSTER_HIT_INTERVAL_MS` 1000
+- `MONSTER_WALK_MS_PER_TILE` 2400
+- `MONSTER_ORE_ROAM_DISTANCE` 3
 - `KNOCKOUT_KEEP` 3 rows, after starter clothes
 - `MAX_HP` 100
 
@@ -127,7 +129,7 @@ Weights are the full table. A living spot rolls one ore the player has unlocked 
 ### 6b. Floor tiles
 The way up is `(1, 7)`. The way down is `(18, 7)` on floors 1–9. Floor 10 has no way down. Entering the floor sets `pos_x, pos_y` to the way up.
 
-Every floor rolls its Rattler tiles when that floor's spots are first created, stores them, and does not roll again. Floors 1–4 roll 1, floors 5–8 roll 2, floors 9–10 roll 3. Each tile is any floor tile except a rock, the way up, the way down, and another Rattler, and it is farther than `MONSTER_REACH` from the way up. They do not move. A hit deals `5 + floor number` HP. A player inside more than one reach is still hit once per interval.
+Every floor rolls its Rattler tiles when that floor's spots are first created and does not roll again on later visits. Floors 1–4 roll 1, floors 5–8 roll 2, floors 9–10 roll 3. Each starting tile is any floor tile except a rock, the way up, the way down, and another Rattler, and it is farther than `MONSTER_REACH` from the way up. On `tick`, every `MONSTER_WALK_MS_PER_TILE` each Rattler steps one cardinal tile. The step cannot land on a rock, the way up, the way down, another Rattler, the player, or a tile within `MONSTER_REACH` of the way up. A step within `MONSTER_ORE_ROAM_DISTANCE` of an ore is preferred. Otherwise a step closer to the nearest ore is preferred. No legal step means it stays. A hit deals `5 + floor number` HP. A player inside more than one reach is still hit once per interval.
 
 Floors 1–2:
 
@@ -288,11 +290,11 @@ No stamina or yield modifier. `list_store_items` omits them. A buy quote for one
 ## Tool Contracts
 
 ### `get_player_state(player_id)`
-Resolves a pending swing whose `swing_ends_at` has passed, then returns the state. Returns mining level, XP, XP required for the next level (null at 10), HP, max HP, stamina, max stamina, gold, location, `inventory_capacity` (`INVENTORY_SLOTS`), the current floor's spots, `swing_ends_at`, equipped pickaxe (id, name, tier), `equipped_outfit` (`top`, `bottom`, `hat`, each id and name or null), equipped bonus clothing (id, name, modifiers or null), `mastery_badge_earned`, inventory rows (row id, item id, name, type, quantity), and `{npc_id, rapport_score}` for every NPC. Ore rows share an item id and each take a slot.
+Resolves a pending swing whose `swing_ends_at` has passed, then returns the state. Returns mining level, XP, XP required for the next level (null at 10), HP, max HP, stamina, max stamina, gold, location, `inventory_capacity` (`INVENTORY_SLOTS`), the current floor's spots, `swing_ends_at`, equipped pickaxe (id, name, tier), `equipped_outfit` (`top`, `bottom`, `hat`, each id and name or null), equipped bonus clothing (id, name, modifiers or null), `mastery_badge_earned`, inventory rows (`row_id` integer, item id, name, type, quantity), and `{npc_id, rapport_score}` for every NPC. Ore rows share an item id and each take a slot.
 
 Each spot returns index, `x`, `y`, ore or empty, name, swings done, swings needed, swings left, stamina cost, swing seconds, unlocked, `respawn_at`, `progress`, and `progress_target`. With `N` swings needed and `d` swings already finished, a resting rock has `progress` and `progress_target` at `d / N`. During a swing they move from `d / N` toward `(d + 1) / N`, and `progress_target` is that end. An empty spot is bare ground: the client draws no name and no countdown. The spot list is the table for the player's current floor.
 
-On a mine floor the state also returns `pos_x`, `pos_y`, and the floor's Rattlers: each has `x`, `y`, reach, and the floor's hit damage. Elsewhere `pos_x` and `pos_y` are null and there are no Rattlers. HP is the stored value, not a constant 100.
+On a mine floor the state returns `position` as `{x, y}` and `floor`: `width`, `height`, `way_up`, `way_down` (null on floor 10), `rattlers` (`id`, `x`, `y`, `strike_sequence`), `rattler_reach`, `hit_damage`, and `walk_ms_per_tile`. `strike_sequence` goes up by 1 when that Rattler lands a hit. Elsewhere `position` and `floor` are null. Stored columns remain `pos_x` and `pos_y`. HP is the stored value, not a constant 100.
 
 ### `list_mine_levels(player_id)`
 For each floor: level number, entry requirement, whether it is locked, and each ore with weight, unlocked flag, required Mining Level, required pickaxe tier, and the stamina cost for the player's current pickaxe. The UI builds lock hints from these fields (`STYLE_GUIDE.md`).
@@ -304,7 +306,7 @@ Catalog rows the store sells (pickaxes and bonus clothing) and ores the store bu
 `saloon` and `mining_quarter` are always allowed. `mine_N` requires `mining_level >= required_mining_level`. Every move between locations is free. The client plays the walk first and calls `move` when the character arrives. This call does not simulate the path inside Boomtown. Success sets `current_location`. Entering a mine floor ensures that floor's spots exist, sets the tile to `(1, 7)`, and clears `step_credit_ms` and `attack_bank_ms`. Leaving a floor clears `swing_ends_at`, discards `pending_swing` without granting it, clears the tile and both banks, and leaves the spots, including their respawn timers, in place. A locked floor never starts the walk.
 
 ### `set_position(player_id, x, y)`
-Requires `current_location` of `mine_N`. `x` and `y` are integers inside the floor. The new tile must be the current tile or a neighbor at Chebyshev distance 1 (the eight surrounding tiles). A farther tile returns `BAD_POSITION` and does not change the tile. A changed tile requires `step_credit_ms >= WALK_MS_PER_TILE`; otherwise `BAD_POSITION`. On success, subtract `WALK_MS_PER_TILE` and store the tile. The same tile is free and does not spend credit. A changed tile discards an unapplied `pending_swing` and clears `swing_ends_at`. That swing grants nothing, and the stamina already spent is not returned. This call does not apply hits. Hits land on `tick`.
+Requires `current_location` of `mine_N`. Any other location returns `WRONG_LOCATION`. `x` and `y` are integers inside the floor. The new tile must be the current tile or a neighbor at Chebyshev distance 1 (the eight surrounding tiles). A farther tile returns `BAD_POSITION` and does not change the tile. A changed tile requires `step_credit_ms >= WALK_MS_PER_TILE`; otherwise `BAD_POSITION`. On success, subtract `WALK_MS_PER_TILE` and store the tile. The same tile is free and does not spend credit. A changed tile discards an unapplied `pending_swing` and clears `swing_ends_at`. That swing grants nothing, and the stamina already spent is not returned. This call does not apply hits. Hits land on `tick`.
 
 ### `tick(player_id, elapsed_ms)`
 Adds `elapsed_ms` to `step_credit_ms` and caps that credit at `WALK_MS_PER_TILE`.

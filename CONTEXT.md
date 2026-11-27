@@ -10,9 +10,9 @@ GitHub `main` is the single source of truth for specs, schema, evals, and code. 
 ## Who Edits Specs
 Lovable and Replit should propose spec changes in plain language when they hit a blocker. They do not edit the spec files themselves.
 
-When the prototype gains a rule the specs do not already state, Lovable records it in `src/PROTOTYPE_DRIFT.md` in its own repo. Each entry names the prototype behavior, the spec behavior, the `SCHEMA.md` constant if a number is involved, and whether `src/` still contains that number as a literal.
+When the prototype gains a rule the specs do not already state, Lovable records it in `src/PROTOTYPE_DRIFT.md` in its own repo, `akularora77/lone-star-frontier`. Each entry names the prototype behavior, the spec behavior, the `SCHEMA.md` constant if a number is involved, and whether `src/` still contains that number as a literal.
 
-The bridge into this repo copies the app across and leaves the root specs in place: `src/`, `public/`, and the app config files (`package.json`, lockfile, and the TypeScript and Vite config). It does not copy a Lovable `README.md` over this one. Accepted drift entries are then written into the specs and removed from the drift file. Replit builds from this repo, not from the Lovable repo and not from the drift file.
+A "pull Lovable" reads that drift file from `akularora77/lone-star-frontier` and compares it with the specs in this repo. It does not review the copy already on this `main`. Proposals that match the game are written into the specs. When a proposal fights a rule already set, ask before changing it. After that confirmation, push the spec updates and the copied app to this `main`. The pull copies `src/`, `public/`, and the app config files (`package.json`, lockfile, and the TypeScript and Vite config). It does not copy a Lovable `README.md` or `AGENTS.md` over this repo's. Each pull also says one way the Lovable handoff could work better. Replit builds from this repo, not from the Lovable repo and not from the drift file.
 
 In this repo, small clarifications can be applied locally and pushed in batches. Major changes to progression, economy, or the AI contract wait for the user's approval before they land on `main`. After a spec push, Lovable and Replit pull `main` before building further.
 
@@ -27,7 +27,7 @@ In this repo, small clarifications can be applied locally and pushed in batches.
 - The mock keeps the player in memory. `localStorage` is not the player record.
 - No Lovable Cloud. No Supabase client in `src/`. The browser reaches the database only through Replit.
 - Fonts and the page title are set from the root head inside `src/`.
-- Mock tests live next to the mock under `src/`. They cover the price band, locked floors, the ore filter, stamina, trades, inventory-full, quote expiry, the rapport clamp, unstacked ore, cancelling a swing by walking, a Rattler's tiles rolled once per floor, Rattler hits, and knockout. They do not replace the later harness in `evals/`.
+- Mock tests live next to the mock under `src/`. They cover the price band, locked floors, the ore filter, stamina, trades, inventory-full, quote expiry, the rapport clamp, unstacked ore, cancelling a swing by walking, Rattlers that roam, Rattler hits, and knockout. They do not replace the later harness in `evals/`.
 
 ## File Ownership
 - **Lovable:** `src/` only, including colocated mock tests, `src/styles.css`, and `src/PROTOTYPE_DRIFT.md`.

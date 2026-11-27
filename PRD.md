@@ -10,7 +10,7 @@ Top-down only. 3D is v2.1. Tiles are in `SCHEMA.md`.
 - Floors 1–2: 8 rocks.
 - Floors 3–4: 10 rocks. Floors 5–10: 8 rocks.
 - Every rock rolls from that floor's ore weights.
-- Every floor has Rattlers. One on floors 1–4, two on 5–8, three on 9–10. Each tile is rolled once, then it stays. Reach 3. A hit is 5 + the floor number, every 2 seconds. They do not move. The player cannot attack them. Overlapping reaches still hit once.
+- Every floor has Rattlers. One on floors 1–4, two on 5–8, three on 9–10. Tiles are rolled once. Each one then wanders one tile every 2.4 seconds, staying near ore and off rocks, ladders, and the player. Reach 3, not drawn. A hit is 5 + the floor number, every 1 second. The player cannot attack them. Overlapping reaches still hit once.
 - A hit does not stop a swing. Walking to another tile does. That swing grants nothing. Stamina already spent stays spent.
 - `set_position` is one tile and needs 400ms. `tick` applies hits.
 - At 0 HP: cancel the swing, HP returns to 100, player goes to `mining_quarter`. Gold, level, and XP stay.
@@ -75,8 +75,8 @@ To allow for easy rebranding, all entities use the following "Master Names" whic
     | 5–8 | 8 | 2 |
     | 9–10 | 8 | 3 |
 
-    Each living spot rolls one unlocked ore from that floor's weights. The player sees the ore, the swings still left, and the stamina cost. Each swing lasts that ore's duration. Another mine click during a swing does nothing. A hit does not stop the swing. Walking to another tile does, and that swing grants nothing. The client keeps the rock selected until it breaks or the player walks away. When the last swing's time has passed, the spot goes empty for that ore's respawn time, then rolls again. An empty spot is bare ground. Tiles are in `SCHEMA.md`.
-  - **4b2. Rattler:** Every floor has them. Tiles are rolled once when the floor is created and do not change. They do not move and cannot be attacked. A hit is `5 + floor` HP every 2 seconds while the player is within 3 tiles of any of them. Two reaches at once still hit once. Leaving every reach stops the hits. At 0 HP the current swing grants nothing, starter clothes are kept, the 3 other rows with the highest catalog base value are kept, every other row is deleted, HP is set to 100, and the location becomes `mining_quarter`. Gold and XP do not change.
+    Each living spot rolls one unlocked ore from that floor's weights. The player sees the ore, a progress bar for the whole rock, and the stamina cost. Each swing lasts that ore's duration. Another mine click during a swing does nothing. A hit does not stop the swing. Walking to another tile does, and that swing grants nothing. The client keeps the rock selected until it breaks or the player walks away. When the last swing's time has passed, the spot goes empty for that ore's respawn time, then rolls again. An empty spot is bare ground. Tiles are in `SCHEMA.md`.
+  - **4b2. Rattler:** Every floor has them. Tiles are rolled once when the floor is created. On `tick`, each Rattler steps one cardinal tile every 2.4 seconds. It will not step onto a rock, a ladder, another Rattler, the player, or a tile within 3 of the way up. It prefers a step within 3 of an ore, otherwise a step closer to ore. It cannot be attacked. The reach is not drawn. A hit is `5 + floor` HP every 1 second while the player is within 3 tiles of any of them. Two reaches at once still hit once. Leaving every reach stops the hits. At 0 HP the current swing grants nothing, starter clothes are kept, the 3 other rows with the highest catalog base value are kept, every other row is deleted, HP is set to 100, and the location becomes `mining_quarter`. Gold and XP do not change.
   - **Floor weights:**
     | Floor | Enter at | Copper | Iron | Silver | Gold | Mithril |
     | :--- | :--- | ---: | ---: | ---: | ---: | ---: |
